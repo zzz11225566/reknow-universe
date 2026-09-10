@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>炼知 ReKnow v6 · 项目策划书（炼金宇宙版）</title>
+<style>
+:root{--blue:#0f88eb;--purple:#7c5cff;--gold:#e6a23c;--green:#1fa15f;--red:#e05a5a;
+  --text:#1a1a1a;--t2:#4b4b4b;--t3:#8a8f99;--bg:#f5f6f8;--card:#fff;--line:#e6e8eb;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.85;font-size:16px}
+.wrap{max-width:980px;margin:0 auto;padding:0 22px}
+h1,h2,h3{line-height:1.4}
+.hero{background:linear-gradient(135deg,#0b6fc4,#7c5cff);color:#fff;padding:64px 0 56px;border-radius:0 0 28px 28px}
+.hero .eyebrow{font-size:.82rem;letter-spacing:.2em;opacity:.85;margin-bottom:12px}
+.hero h1{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800}
+.hero .sub{margin-top:12px;font-size:1.05rem;opacity:.94;max-width:46em}
+.hero .meta{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap}
+.hero .pill{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:4px 14px;font-size:.8rem}
+main{padding:0 0 60px;margin-top:-28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.06);padding:28px;margin-top:22px}
+h2.sec{font-size:1.35rem;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+h2.sec .no{width:30px;height:30px;border-radius:9px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:.85rem;font-weight:700;flex:none}
+h2.sec.purple .no{background:var(--purple)} h2.sec.green .no{background:var(--green)} h2.sec.gold .no{background:var(--gold)}
+p{color:var(--t2)}
+.callout{border-radius:16px;padding:22px 26px;margin-top:16px;position:relative;overflow:hidden;font-size:1.06rem;font-weight:700;line-height:1.6}
+.callout.purple{background:linear-gradient(135deg,rgba(124,92,255,.12),rgba(124,92,255,.04));border:1px solid rgba(124,92,255,.35)}
+.callout.green{background:linear-gradient(135deg,rgba(31,161,95,.12),rgba(31,161,95,.04));border:1px solid rgba(31,161,95,.35)}
+.callout.dark{background:linear-gradient(135deg,rgba(11,16,32,.96),rgba(23,42,96,.92));border:1px solid rgba(124,92,255,.5);color:#fff}
+.callout.dark p{color:rgba(255,255,255,.85)}
+.callout .ic{font-size:1.6rem;margin-right:8px}
+.callout .tag2{display:inline-block;font-size:.7rem;letter-spacing:.14em;border-radius:6px;padding:2px 10px;margin-bottom:8px;color:#fff}
+.callout.purple .tag2{background:var(--purple)}
+.callout.green .tag2{background:var(--green)}
+.callout.dark .tag2{background:linear-gradient(135deg,#f5b64b,#e6862e)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff}
+.tile .i{font-size:1.6rem}
+.tile b{display:block;margin:6px 0 4px;font-size:1rem}
+.tile p{font-size:.9rem}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.92rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--bg);color:var(--t3);font-size:.8rem;font-weight:600}
+tr:last-child td{border-bottom:0}
+ul{list-style:none;margin-top:8px}
+li{padding:5px 0 5px 22px;position:relative;color:var(--t2);font-size:.95rem}
+li::before{content:"✦";position:absolute;left:0;color:var(--gold)}
+b.hl{color:var(--purple)} b.hl2{color:var(--green)} b.hl3{color:var(--blue)}
+code{background:#f0f1f4;border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:.86rem;font-family:Consolas,monospace;color:#0f5fae}
+.foot{text-align:center;color:var(--t3);font-size:.82rem;padding:30px 0 20px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="wrap">
+    <div class="eyebrow">知乎黑客松 2026 · 校园新锐季 · 知识炼金场赛道</div>
+    <h1>炼知 ReKnow · 把「收藏」炼成「回答」</h1>
+    <p class="sub">一款长在知乎问答生态上的 AI 知识再创造引擎：拆解 → 学懂 → DIY 图谱 → 回流社区。本版（v6 · 炼金宇宙版）在 v5 的四种学习方式 / AI 开杠 / DIY 图谱 / 知识库之上，把每个学习主题升维成一座沉浸式 <b>3D 炼金宇宙</b>：知识是星体、学懂是炉火、天气与时间真的会改变你的学习场景。</p>
+    <div class="meta"><span class="pill">🎯 知识炼金场赛道</span><span class="pill">🏫 学生 &amp; 毕业 3 年内</span><span class="pill">⏱ 48h 可交付 MVP</span><span class="pill">🌌 v6 沉浸式 3D 宇宙</span></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="card">
+    <h2 class="sec"><span class="no">☆</span>最想说的三句话</h2>
+    <div class="callout purple"><span class="tag2">核心机制</span><br><span class="ic">🛡️</span><b class="hl">AI 反对你，与 AI 开杠，可以强化学习和记忆。</b><br>AI 在学习检测阶段主动当「反对派」，可选温和 / 适中 / 激烈，把模糊之处顶到台面上。</div>
+    <div class="callout green"><span class="tag2">核心理念</span><br><span class="ic">🔗</span><b class="hl2">学习不是孤立的，可以和实际紧密相连。</b><br>每块知识点学完都落到生活 / 学习 / 工作场景，避免「收藏了却用不上」。</div>
+    <div class="callout dark"><span class="tag2">v6 体验升级</span><br><span class="ic">🌌</span>把「收藏夹」变成一片可以走进去的<b>知识星海</b>：每一篇收藏都是漂浮的星球，学懂它会点亮它的光环；天气会变、时间会走，炉火与星尘随之呼吸——学习第一次有了「身临其境」的质感。</div>
+  </div>
+
+  <div class="card">
+    <h2 class="sec purple"><span class="no">1</span>我们解决什么问题</h2>
+    <p>知乎用户的典型行为是「收藏即终点」：收藏夹囤了几百篇，回看率低；真要讲、要写时组织不起来。缺的不是内容，而是<b>把别人的好内容变成自己的能力</b>的那道工序。</p>
+    <div class="grid">
+      <div class="tile"><span class="i">🐿️</span><b>收藏夹吃灰</b><p>收藏 ≠ 学会，囤积焦虑远大于消化。</p></div>
+      <div class="tile"><span class="i">🧠</span><b>看完就忘</b><p>缺少主动回忆与间隔复习。</p></div>
+      <div class="tile"><span class="i">✍️</span><b>输出无门</b><p>想写回答怕重复、组织不起观点。</p></div>
+      <div class="tile"><span class="i">🧩</span><b>碎片无体系</b><p>知识散落各篇，形不成自己的地图。</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="sec purple"><span class="no">2</span>v6 炼金宇宙：四个新体验</h2>
+    <div class="grid">
+      <div class="tile"><span class="i">🌌</span><b>沉浸式 3D 宇宙</b><p>主题 = 星球（大小随热度）、原文 = 炼金链路（光点流动）、中心 = 炼金炉（炉火随经验值燃烧）、看山 = 向导（会随天气换动作）。点星体即可回到「拆解 → 学懂 → 图谱 → 回流」完整闭环。</p></div>
+      <div class="tile"><span class="i">🌦️</span><b>天气系统</b><p>晴天 / 多云 / 雨夜 / 雪夜 / 极光一键切换，1.5 秒平滑过渡：光影色温、星尘密度与流速、雨雪极光粒子、雾浓度与背景全部实时联动。</p></div>
+      <div class="tile"><span class="i">🕐</span><b>环境数据驱动</b><p>真实时间决定昼夜（黎明 / 白昼 / 黄昏 / 深夜）自动调色；接入可选后端后，真实城市天气与热榜会通过 WebSocket 实时推送并自动改变场景。</p></div>
+      <div class="tile"><span class="i">✏️</span><b>原文圈点勾画</b><p>每颗星 / 每篇拆解都可在「知乎问答样式」原文上选中文字做 <b>黄 / 蓝 / 粉 三色高亮</b>、加<b>旁注批注</b>，自动保存，下次打开自动恢复。</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="sec green"><span class="no">3</span>热榜 · 搜索 · 数据驱动场景</h2>
+    <ul>
+      <li><b>🔥 知识热榜</b>：宇宙右上角热榜抽屉，按「热度」排序（星体大小即热度）；点榜单直达对应星体并聚焦视角。</li>
+      <li><b>🔍 全站搜索</b>：按题目 / 答主 / 分类 / 关键词过滤星海，其余星球淡出；后端在线时同步检索热榜 API。</li>
+      <li><b>📡 后端可选</b>：自带 <code>server.js</code>（纯 Node、零依赖）——静态托管 + <code>/api/hotlist</code> + <code>/api/search</code> + <code>/api/env</code> + WebSocket 实时推送；前端自动探测，连上即点亮「实时」徽标。无后端时全部用本地数据自洽运行，<b>双击 HTML 也能完整演示</b>。</li>
+      <li><b>🗂 数据说明</b>：赛事演示使用预置示例收藏（12 篇 + 自定义），真实接入时替换为知乎开放平台（OAuth 收藏夹 / 收藏内容 / 创作接口）与天气 API（OpenWeatherMap / 和风），并遵守 robots.txt 与最小授权。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="sec gold"><span class="no">4</span>天气 × 场景 × 看山（体验对照）</h2>
+    <table>
+      <tr><th>天气</th><th>光影 / 背景</th><th>粒子与特效</th><th>看山动作</th></tr>
+      <tr><td>☀️ 晴天</td><td>暖金直射光、明亮天际</td><td>星尘稀疏慢速</td><td>招手微笑（wave）</td></tr>
+      <tr><td>🌤 多云</td><td>柔光、灰蓝天穹</td><td>星尘正常流速</td><td>晃悠思考（sway）</td></tr>
+      <tr><td>🌧 雨夜</td><td>冷蓝紫光、雾加重</td><td>雨丝密集、下落加速、炉火变旺</td><td>缩在电脑前躲雨（dozing）</td></tr>
+      <tr><td>❄️ 雪夜</td><td>冷白漫射微辉光</td><td>雪花缓落</td><td>搓手办公（pc）</td></tr>
+      <tr><td>🌌 极光</td><td>墨绿宇宙、绿紫极光带流动</td><td>粒子随极光波动</td><td>仰望惊叹（idle）</td></tr>
+    </table>
+    <p style="margin-top:10px">所有切换由内部 tween 驱动（τ≈0.5s → 约 1.5 秒到 95%），连续切换也平滑；夜晚（真实时间）自动压暗并让星体更亮，黎明 / 黄昏会带暖色调。</p>
+  </div>
+
+  <div class="card">
+    <h2 class="sec green"><span class="no">5</span>四种学习方式（v5 保留 · 重点）</h2>
+    <div class="grid">
+      <div class="tile"><span class="i">🏆</span><b>五关挑战</b><p>抓重点 → 换说法 → 找漏洞 → 举例子 → 提问，最扎实。</p></div>
+      <div class="tile"><span class="i">⚡</span><b>快问快答</b><p>8 道限时题 + 倒计时 + 得分，边玩边巩固。</p></div>
+      <div class="tile"><span class="i">🎧</span><b>听讲复盘</b><p>温柔女声逐句朗读 + 跟读模式，通勤 / 睡前可用。</p></div>
+      <div class="tile" style="border-color:rgba(124,92,255,.4)"><span class="i">🛡️</span><b>AI 开杠</b><p>AI 当反对派，可选强度，越辩越牢。</p></div>
+    </div>
+    <p style="margin-top:12px">学懂后继续：<b>DIY 思维图谱</b>（拖拽 / 缩放 / 连线 / 真 3D 视角 / 撤销重做）→ <b>融会贯通</b>（生活 / 学习 / 工作三张卡）→ <b>回流</b>（发回知乎 / 存知识库 / 成果卡 PNG）。</p>
+  </div>
+
+  <div class="card">
+    <h2 class="sec"><span class="no">6</span>技术实现与可行性</h2>
+    <table>
+      <tr><th>能力</th><th>实现</th></tr>
+      <tr><td>3D 渲染</td><td>Three.js（r160，本地 vendored UMD，<b>无 CDN / 无构建 / file:// 可直接跑</b>）+ 自制轨道控制 / 渐变天空 / 极光 Shader / 雨雪粒子</td></tr>
+      <tr><td>天气引擎</td><td>5 套环境预设（光 / 雾 / 背景 / 粒子 / 看山动作），帧级 tween 平滑过渡约 1.5s</td></tr>
+      <tr><td>环境联动</td><td>真实时间 → 昼夜色温自动渐变；后端实时城市天气 / 热榜经 WebSocket 推送驱动场景</td></tr>
+      <tr><td>原文圈点</td><td>Range API 选区高亮（3 色）+ 旁注批注；段落级 HTML + 批注库存于 localStorage（<code>rkUniOrig</code>），重开自动恢复</td></tr>
+      <tr><td>热榜 / 搜索</td><td>离线：本地 12 选题按热度排序 + 关键词过滤；在线：<code>/api/hotlist</code> <code>/api/search</code></td></tr>
+      <tr><td>后端</td><td>可选纯 Node 零依赖 <code>server.js</code>：静态托管 + REST + WebSocket（hello / heartbeat / hotlist / env 推送）</td></tr>
+      <tr><td>AI 编排 / 语音</td><td>多角色拆解提问反驳编排（模型可替换）；Web Speech API 中文朗读；Web Audio 轻音效可一键静音</td></tr>
+      <tr><td>数据来源（未来）</td><td>知乎开放平台 OAuth（收藏夹 / 内容 / 关注 / 创作）+ 天气 API；本文演示为预置缓存数据 + 少量实时演示</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="sec gold"><span class="no">7</span>赛道契合 · 生态价值 · 商业</h2>
+    <ul>
+      <li><b>赛道契合</b>：AI 学习助手 + 知识再创造 + 「把收藏炼成回答」闭环 + 沉浸式知识场景，完全落在「知识炼金场」。</li>
+      <li><b>对知乎</b>：活化存量长文（知识点溯源回链原文并支持圈点批注）、读者变作者、收藏夹从「终点」变「起点」。</li>
+      <li><b>商业</b>：Freemium（无限炼金队列 / 深度拆解 / 复习调度 / 3D 主题皮肤）+ 校园与企业团体订阅。</li>
+      <li><b>合规</b>：赛事演示数据仅展示；正文永远出自用户之手，AI 只做拆解 / 提问 / 反驳 / 整理 / 查重守门；素材与看山形象版权归知乎官方，仅赛事用途。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="sec"><span class="no">8</span>交付清单与运行方式</h2>
+    <p><b>方式一（离线演示，推荐给评委）</b>：双击 <code>index.html</code> 即可——炼金宇宙的 3D 引擎已内置本地，无需联网、无需安装。</p>
+    <p style="margin-top:8px"><b>方式二（实时联动演示）</b>：<code>node server.js</code> → 打开 <code>http://localhost:8787</code>，前端自动探测后端并点亮「实时」：热榜每小时重排、天气每 72 分钟变化并经 WebSocket 推送到 3D 场景。</p>
+    <table style="margin-top:14px">
+      <tr><th>文件</th><th>说明</th></tr>
+      <tr><td>index.html / app.js / data.js</td><td>主应用（v5 全流程 + v6 原文 / 图谱 / 跟读）</td></tr>
+      <tr><td>universe.js</td><td>v6.5 炼金宇宙：3D 场景 / 天气 / 热榜搜索 / 原文圈点阅读器</td></tr>
+      <tr><td>boot.js</td><td>接入层：视图包裹、懒加载 3D、拆解页原文圈点入口、全局看山换动作</td></tr>
+      <tr><td>vendor/three.min.js</td><td>Three.js r160（本地 UMD，仅打印一条弃用提示，可忽略）</td></tr>
+      <tr><td>server.js / package.json</td><td>可选实时后端（零依赖 Node 服务）</td></tr>
+      <tr><td>assets/</td><td>看山官方 GIF（6 种动作）</td></tr>
+    </table>
+  </div>
+
+  <div class="foot">炼知 ReKnow · 项目策划书 v6（炼金宇宙版）· 配套 <b>用户使用指南</b> 见同目录 · 素材版权归知乎官方所有，仅赛事用途</div>
+</main>
+</body>
+</html>

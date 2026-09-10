@@ -1,0 +1,17 @@
+{
+  "name": "recknow-v6-universe",
+  "version": "6.5.0",
+  "private": true,
+  "type": "module",
+  "description": "炼知 ReKnow v6.5 · 炼金宇宙版（离线可跑；本服务为可选实时后端）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "server": "node server.js",
+    "demo": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
