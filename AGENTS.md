@@ -29,7 +29,7 @@
 
 ## 2. 当前任务与进度（接手前先看这里）
 
-- **进行中（9/12）**：「炼金宇宙优化——熔炉核心」改造（任务书：`docs/炼金宇宙优化-prompt.md`）：3D 中央炼金炉 → 底部 CSS 熔炉（`#uniHearth`），群星整体抬升，`#uniShell[data-tod=day|dusk|night]` 昼夜 HUD 适配。`index.html` HUD CSS 已入库；`universe.js` 对应 JS 改动**尚未提交**，接手前先 `git status` 看现场。
+- **刚完成（9/12）**：「炼金宇宙优化——熔炉核心 + 星糖罐风」A→E 五批全部交付并回归通过（任务书：`docs/炼金宇宙优化-prompt.md` 或根目录 `炼金宇宙优化-prompt.md`）。批次0 熔炉核心（3D 炉火 → 底部 CSS `#uniHearth`、群星抬升、昼夜 HUD）+ A（内存/泄漏/帧率解耦）+ B（交互反馈/音效/空态）+ C（性能与内存复验/捏合/双击）+ D（雨雪氛围音/两级分层星海）+ E（星糖 shader 星体、糖丝 TubeGeometry 链路、新星诞生动画、`?fps=1` 角标、移动端几何减半）。只改 `universe.js` / `index.html`，硬约束全遵守（app/boot/data/server/vendor/assets 未动、file:// 可用、新状态进 `rkUni6` 子键）。备份链 `*.bak-unifix-20260912-pA~pE`（+各 pX0）在根目录，本地不入库。验证：`_uni_e_verify.cjs` + A/B/C/D 回归脚本全过（证据在 `evidence/_uni_e_*`）。
 - **刚完成（9/12）**：按设计稿重做首页与顶栏（任务书：`docs/首页重做-prompt.md`，设计稿：`docs/首页重做-设计稿.jpg`）。桌面端 `evidence/_verify_desktop.png` 与移动端 `evidence/_verify_mobile.png` 均验证通过。
 - **9/11 完成的结构改版**：砍掉「思维图谱」「知识库」两个独立视图，功能并入炼金宇宙（`uniMind` 导图覆盖层 + `uniKnowPanel`「已习得」面板 + 交叉分析）。
 - **同日（9/12）工程整理**：v7 转正、`.git` 上移、目录收敛（docs/ scripts/ evidence/）。
@@ -69,11 +69,11 @@ C:\Users\cxy\Desktop\宇宙版\          （= git 仓库根 = GitHub reknow-univ
 | `index.html` | 主应用骨架 + 几乎全部 CSS（单 `<style>`）；9/12 已按设计稿重绘首页 + 熔炉 HUD |
 | `app.js` | 全局状态 `S`（localStorage `rkSave`/`rkCustom`）；`showView` 只切 home/flow 两视图；`renderHome` 动态渲染 hero/分类书架/题卡；学习流四步（拆解→四种学习方式→成果→回流）；`renderMindMap`/`bindMindMap(t, hostId)` 思维导图（可挂任意宿主）；AI 开杠 `debateRebuttals` |
 | `boot.js` | 零侵入接入层：包裹 `showView` 支持 `'uni'`；懒加载 `vendor/three.min.js` → `universe.js`；拆解页注入「📖 原文圈点」按钮；`__rkOnWeather` 按天气给看山换 GIF；调试钩子 `?auto=uni` / `?diag=1` |
-| `universe.js` | `window.ReckonUniverse`：Three.js 星海（星体=已习得收藏、Bezier 炼金链路）、5 种天气 1.5s 过渡、真实时间昼夜、热榜抽屉+全站搜索+镜头飞行、星体卡、原文阅读器（3 色高亮+旁注）；v7 新增 `uniMind` 导图覆盖层、`uniKnowPanel`「已习得」面板；熔炉改造中：3D 炉火 → 底部 CSS `#uniHearth` |
+| `universe.js` | `window.ReckonUniverse`：Three.js 星海（星体=已习得收藏、炼金链路）、5 种天气 1.5s 过渡、真实时间昼夜、热榜抽屉+全站搜索+镜头飞行、星体卡、原文阅读器（3 色高亮+旁注）；v7 新增 `uniMind` 导图覆盖层、`uniKnowPanel`「已习得」面板；熔炉核心（批次0）：3D 炉火 → 底部 CSS `#uniHearth`、群星抬升；E 组：星糖共享 shader 星体（菲涅尔糖釉+流云纹+呼吸暖金+随天气 uDim 明暗）、双层大气晕、按 id hash 差异化自转、糖丝 TubeGeometry 链路（两端分类色渐变流动+双端已习得金丝）、新星诞生动画（`rkUni6.pendingBirth` 队列 → 炉火起飞 → 落位弹性胀开，进宇宙自动切全量平铺播放）、`?fps=1` 帧率角标、`IS_TOUCH` 移动端几何减半 |
 | `data.js` | `window.DEMO`：4 主题分类 + 12 篇演示选题（拆解块 type 1–7）+ 账号信息；真实接入时替换为知乎开放平台数据 |
 | `server.js` | 可选后端（ESM、零依赖）：静态托管；`/api/hotlist`（模拟热榜，id 与本地选题对应）、`/api/search`、`/api/env`（模拟天气）、`/ws` 手写 WebSocket 定时广播；前端自动探测，连上点亮「实时」徽标 |
 
-**localStorage 键位表**：`rkSave`（学习进度）、`rkCustom`（自定义选题）、`rkUni6`（宇宙偏好/天气）、`rkUniOrig`（原文+批注）；规划中的 `rkRecipe`（炼金配方，未实现）。
+**localStorage 键位表**：`rkSave`（学习进度）、`rkCustom`（自定义选题）、`rkUni6`（宇宙偏好/天气；含子键 `pendingBirth`={list,played} 诞生动画队列（E 组）、`followLive`、`weather`）、`rkUniOrig`（原文+批注）；规划中的 `rkRecipe`（炼金配方，未实现）。
 
 ---
 
@@ -83,7 +83,7 @@ C:\Users\cxy\Desktop\宇宙版\          （= git 仓库根 = GitHub reknow-univ
 - **可选后端**：`node server.js`（或 `npm start`）→ http://localhost:8787，获得实时热榜/环境推送（绿色「实时」徽标）。Node ≥ 18（`"type":"module"`）。
   - ⚠️ 启动前确认 8787 未被占用（僵尸预览服务会 EADDRINUSE）。
   - ⚠️ `v2-rebuild/` 的 server 是 CommonJS，与主项目 ESM 不通用，别混启动方式。
-- **语法自检**：`node archive/patches/_syntax.cjs`（用 `vm.Script` 检查 app/universe/boot/data 四件套；`node --check` 不适用，见 §1.6）。
+- **语法自检**：`node _syntax_port.cjs`（根目录，vm.Script 方式检查四件套；`node --check` 只适用于 universe.js/boot.js/data.js，app.js 因两代代码同名函数重复声明不适用，见 §1.6）。
 - **浏览器验证**：改动后必须在真实浏览器检查桌面 + 移动两端。脚本在 `scripts/`（`_verify_port.cjs`、`_shot_*.cjs`，内含本机绝对路径，换机器需改）；截图证据存 `evidence/`。
 
 ---
@@ -106,7 +106,7 @@ C:\Users\cxy\Desktop\宇宙版\          （= git 仓库根 = GitHub reknow-univ
 ## 7. 待办与风险
 
 ### 待办
-1. **熔炉核心改造收尾**：`universe.js` 的 JS 部分（`#uniHearth` 注入、`data-tod` 已部分入库）提交后，删除根目录 `_uni_*` scratch，并补一次真实浏览器验证截图入 `evidence/`。
+1. ~~熔炉核心改造收尾~~（9/12 完成：随 A–E 批交付，验证截图入 `evidence/_uni_e_*`）。
 2. **原版 4 个内容补丁是否合入主线**：移植产物在 `archive/patches/*.patched-20260912`，是否重新合入待 owner 决策。
 3. 按 `docs/网站构建指导.md` 六步路线图推进（第 0 步：需求冻结）。
 
