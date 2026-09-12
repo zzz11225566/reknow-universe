@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>炼金宇宙 · 整页设计稿 v2</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+  body{width:1440px;height:900px;overflow:hidden;position:relative;background:linear-gradient(180deg,#232a44 0%,#2b3350 34%,#33375a 62%,#4a3a3a 86%,#5a4030 100%)}
+  /* 星点 */
+  .stars{position:absolute;inset:0;background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%,rgba(255,255,255,.9),transparent 60%),
+    radial-gradient(1.2px 1.2px at 28% 8%,rgba(255,255,255,.7),transparent 60%),
+    radial-gradient(1.8px 1.8px at 44% 22%,rgba(255,240,210,.9),transparent 60%),
+    radial-gradient(1.2px 1.2px at 63% 12%,rgba(255,255,255,.6),transparent 60%),
+    radial-gradient(2px 2px at 78% 26%,rgba(255,244,220,.9),transparent 60%),
+    radial-gradient(1.2px 1.2px at 90% 10%,rgba(255,255,255,.7),transparent 60%),
+    radial-gradient(1.4px 1.4px at 8% 48%,rgba(255,255,255,.55),transparent 60%),
+    radial-gradient(1.2px 1.2px at 55% 40%,rgba(255,255,255,.5),transparent 60%),
+    radial-gradient(1.6px 1.6px at 86% 52%,rgba(255,236,200,.8),transparent 60%),
+    radial-gradient(1.2px 1.2px at 35% 58%,rgba(255,255,255,.45),transparent 60%),
+    radial-gradient(1.4px 1.4px at 70% 66%,rgba(255,255,255,.5),transparent 60%),
+    radial-gradient(1.2px 1.2px at 18% 74%,rgba(255,244,220,.6),transparent 60%);}
+  svg.orbits{position:absolute;inset:0;width:100%;height:100%}
+  /* 熔炉光晕 */
+  .hearth{position:absolute;left:50%;bottom:-260px;transform:translateX(-50%);width:760px;height:520px;border-radius:50%;
+    background:radial-gradient(closest-side,rgba(255,196,110,.95),rgba(240,140,50,.55) 45%,rgba(180,90,30,.18) 70%,transparent 100%);
+    filter:blur(6px)}
+  .hearth-ring{position:absolute;left:50%;bottom:-150px;transform:translateX(-50%);width:560px;height:560px;border-radius:50%;
+    border:2px dashed rgba(255,205,130,.35)}
+  /* 顶栏 */
+  .topbar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:14px;padding:14px 20px;
+    background:linear-gradient(180deg,rgba(10,8,18,.85),rgba(10,8,18,0))}
+  .brand{display:flex;align-items:center;gap:9px;white-space:nowrap}
+  .brand .ud{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffd98a,#e6862e 60%,#7c3c08);box-shadow:0 0 12px 2px rgba(230,134,46,.55)}
+  .brand b{font-size:1.06rem;font-weight:800;font-family:"Songti SC",Georgia,"Microsoft YaHei",serif;letter-spacing:.05em;color:#ffd98a;text-shadow:0 0 10px rgba(230,150,60,.4)}
+  .brand small{color:rgba(255,220,160,.78);font-size:.72rem;letter-spacing:.02em}
+  .wx{display:flex;align-items:center;gap:2px;padding:4px 6px;background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.35);border-radius:999px;backdrop-filter:blur(8px)}
+  .wx .w{display:inline-flex;flex-direction:column;align-items:center;padding:4px 10px 3px;border-radius:999px;border:1px solid transparent;background:transparent;color:rgba(255,244,222,.6);font-size:.6rem;cursor:pointer}
+  .wx .w .e{font-size:.95rem;opacity:.85}
+  .wx .w.on{background:rgba(230,162,60,.18);border-color:rgba(255,200,110,.65);color:#ffd98a;font-size:.74rem;font-weight:700;box-shadow:0 0 14px rgba(230,150,60,.35)}
+  .wx .w.on .e{opacity:1;font-size:1.05rem}
+  .wx .sep{width:1px;height:18px;background:rgba(255,200,110,.3);margin:0 4px}
+  .wx .live{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;border:1px solid rgba(255,200,110,.5);background:rgba(230,162,60,.18);color:#ffd98a;font-size:.66rem;font-weight:600;cursor:pointer}
+  .wx .live .dot{width:6px;height:6px;border-radius:50%;background:#37d67a;box-shadow:0 0 6px #37d67a}
+  .spacer{flex:1}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:rgba(255,255,255,.85);background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.3);border-radius:999px;padding:7px 14px;backdrop-filter:blur(8px)}
+  .chip .dot{width:7px;height:7px;border-radius:50%;background:#888}
+  .search{background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.3);border-radius:999px;color:rgba(255,255,255,.5);padding:8px 16px;font-size:.82rem;width:190px;backdrop-filter:blur(8px)}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,200,110,.35);background:rgba(22,13,6,.68);color:#ffe9c4;border-radius:999px;padding:8px 16px;font-size:.84rem;cursor:pointer;backdrop-filter:blur(8px)}
+  .btn.gold{background:linear-gradient(135deg,#ffc35e,#e6862e);color:#3a1c00;border-color:transparent;font-weight:700;box-shadow:0 4px 16px rgba(230,134,46,.5)}
+  /* 时钟 */
+  .clock{position:absolute;left:20px;top:90px;background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.35);border-radius:14px;padding:14px 20px 15px;backdrop-filter:blur(8px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+  .clock .t{font-size:2.3rem;font-weight:800;font-family:Georgia,"Songti SC",serif;color:#ffe9b8;letter-spacing:.06em;text-shadow:0 0 8px rgba(255,180,70,.35)}
+  .clock .d{color:rgba(255,236,196,.9);font-size:.8rem;margin-top:4px}
+  .clock .s{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.82rem;color:rgba(255,236,196,.85)}
+  /* 星体+标签 */
+  .planet{position:absolute;left:1010px;top:560px;width:110px;height:110px;border-radius:50%;
+    background:radial-gradient(circle at 32% 30%,#4a4470,#232045 55%,#12102a);
+    box-shadow:0 0 34px 6px rgba(124,92,255,.35),inset -14px -10px 30px rgba(0,0,0,.6)}
+  .tag{position:absolute;left:900px;top:505px;display:flex;align-items:center;gap:10px;background:rgba(22,13,6,.78);border:1px solid rgba(255,200,110,.5);border-radius:999px;padding:10px 20px 10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .tag .ic{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#57d98a,#2ba36a)}
+  .tag b{color:#fff;font-size:1rem;font-weight:700}
+  /* 看山+气泡 */
+  /* 看山（CSS 造型：白团+黑耳尖+黑点眼） */
+  .ks{position:absolute;left:648px;top:470px;width:60px;height:86px}
+  .ks .body{position:absolute;inset:8px 4px 0;background:linear-gradient(180deg,#ffffff,#e9e9ef);border-radius:48% 48% 42% 42%/58% 58% 40% 40%;box-shadow:0 10px 20px rgba(0,0,0,.35)}
+  .ks .ear{position:absolute;top:0;width:16px;height:22px;background:#fff;border-radius:60% 60% 20% 20%}
+  .ks .ear:before{content:"";position:absolute;top:0;left:0;right:0;height:9px;background:#16161c;border-radius:60% 60% 30% 30%}
+  .ks .ear.l{left:10px;transform:rotate(-8deg)}
+  .ks .ear.r{right:10px;transform:rotate(8deg)}
+  .ks .eye{position:absolute;top:38px;width:6px;height:8px;background:#16161c;border-radius:50%}
+  .ks .eye.l{left:18px}
+  .ks .eye.r{right:18px}
+  .ks .arm{position:absolute;top:52px;width:9px;height:20px;background:#16161c;border-radius:99px}
+  .ks .arm.l{left:-2px;transform:rotate(14deg)}
+  .ks .arm.r{right:-2px;transform:rotate(-14deg)}
+  .ks .foot{position:absolute;bottom:-4px;width:12px;height:8px;background:#16161c;border-radius:99px}
+  .ks .foot.l{left:12px}
+  .ks .foot.r{right:12px}
+  .bubble{position:absolute;left:600px;top:392px;background:rgba(30,20,10,.88);border:1px solid rgba(255,200,110,.45);border-radius:14px;padding:10px 16px;color:#ffe9c4;font-size:.84rem;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .bubble:after{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:12px;height:12px;background:rgba(30,20,10,.88);border-right:1px solid rgba(255,200,110,.45);border-bottom:1px solid rgba(255,200,110,.45);rotate:45deg}
+  /* 炉温浮标 */
+  .lv{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(22,13,6,.72);border:1px solid rgba(255,200,110,.45);border-radius:999px;padding:8px 18px;color:#ffd98a;font-size:.84rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.4);backdrop-filter:blur(8px)}
+  .lv .xp{letter-spacing:1px;color:rgba(255,220,160,.7);font-size:.72rem}
+  /* 提示（套底板提亮） */
+  .hints{position:absolute;left:20px;bottom:18px;background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.3);border-radius:12px;padding:9px 14px;color:rgba(255,228,174,.85);font-size:.74rem;line-height:1.8;backdrop-filter:blur(8px)}
+  .hints b{color:#ffd98a;font-weight:600}
+  /* 星体卡 */
+  .card{position:absolute;left:56px;top:300px;width:356px;background:linear-gradient(180deg,rgba(40,29,20,.94),rgba(24,17,12,.96));border:1px solid rgba(232,180,110,.4);border-radius:12px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  .card .hd{display:flex;align-items:center;gap:10px}
+  .card .ic{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#57d98a,#2ba36a);flex:none}
+  .card .tt{flex:1;color:#fff;font-weight:700;font-size:.98rem}
+  .card .x{color:rgba(255,236,205,.82);font-size:1rem}
+  .pills{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .pill{font-size:.7rem;color:#ffd98a;border:1px solid rgba(230,180,110,.4);background:rgba(230,162,60,.1);border-radius:999px;padding:3px 10px}
+  .pill.g{color:#5ad999;border-color:rgba(90,217,153,.45);background:rgba(31,161,95,.14)}
+  .core{margin-top:12px;background:rgba(124,92,255,.14);border:1px solid rgba(139,123,255,.22);border-left:3px solid #8b7bff;border-radius:0 10px 10px 0;color:rgba(255,244,228,.92);padding:10px 12px;font-size:.84rem;line-height:1.7}
+  .prog{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.74rem;color:rgba(255,228,174,.75)}
+  .prog .bar{flex:1;height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+  .prog .bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#e6862e,#ffb84d);border-radius:99px}
+  .prog .fw{color:#ffd98a;font-weight:700;white-space:nowrap}
+  .acts{display:flex;gap:8px;margin-top:12px}
+  .acts .b{flex:1;text-align:center;border-radius:10px;padding:11px 4px;font-size:.88rem;font-weight:700;letter-spacing:.04em}
+  .acts .learn{background:linear-gradient(135deg,#f7b83e,#eb9a2e);color:#3a1c00}
+  .acts .read{background:rgba(255,255,255,.05);border:1px solid rgba(230,180,110,.38);color:#ffe9c4}
+  .acts .mind{background:linear-gradient(135deg,#8b7bff,#6a5cff);color:#fff}
+  /* 标注 */
+  .note{position:absolute;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#ffc35e,#e6862e);color:#3a1c00;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(255,195,94,.3),0 4px 10px rgba(0,0,0,.4);z-index:9}
+  .legend{position:absolute;right:20px;bottom:18px;width:300px;background:rgba(14,10,6,.9);border:1px solid rgba(255,200,110,.4);border-radius:14px;padding:14px 16px;color:rgba(255,236,196,.92);font-size:.76rem;line-height:2;box-shadow:0 12px 36px rgba(0,0,0,.5);backdrop-filter:blur(8px)}
+  .legend h4{color:#ffd98a;font-size:.84rem;margin-bottom:4px;letter-spacing:.04em}
+  .legend .n{display:inline-flex;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#ffc35e,#e6862e);color:#3a1c00;font-size:.62rem;font-weight:800;align-items:center;justify-content:center;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<svg class="orbits" viewBox="0 0 1440 900" fill="none">
+  <path d="M120 830 C 300 500, 520 420, 760 430 S 1240 560, 1360 300" stroke="rgba(255,205,130,.28)" stroke-width="1.5" stroke-dasharray="1 7" stroke-linecap="round"/>
+  <path d="M60 300 C 340 140, 700 120, 980 260 S 1340 620, 1300 860" stroke="rgba(160,170,255,.22)" stroke-width="1.5" stroke-dasharray="1 7" stroke-linecap="round"/>
+  <path d="M240 80 C 500 320, 900 340, 1180 180" stroke="rgba(255,205,130,.2)" stroke-width="1.5" stroke-dasharray="1 7" stroke-linecap="round"/>
+</svg>
+<div class="hearth"></div>
+<div class="hearth-ring"></div>
+
+<!-- 顶栏 -->
+<div class="topbar">
+  <div class="brand"><span class="ud"></span><b>炼金宇宙</b><small>学懂点亮星 · 收藏长成星海</small></div>
+  <div class="wx">
+    <span class="w on"><span class="e">☀️</span>晴天</span>
+    <span class="w"><span class="e">🌤️</span>多云</span>
+    <span class="w"><span class="e">🌧️</span>雨夜</span>
+    <span class="w"><span class="e">❄️</span>雪夜</span>
+    <span class="w"><span class="e">🌌</span>极光</span>
+    <span class="sep"></span>
+    <span class="live"><span class="dot"></span>跟随实时</span>
+  </div>
+  <div class="spacer"></div>
+  <span class="chip"><span class="dot" style="background:#888"></span>本地演示数据</span>
+  <span class="search">🔍 搜索选题 / 关键词…</span>
+  <span class="btn">📊 已习得</span>
+  <span class="btn">🔥 热榜</span>
+  <span class="btn gold">✕ 返回</span>
+</div>
+<div class="note" style="left:330px;top:16px">1</div>
+<div class="note" style="right:352px;top:56px">2</div>
+
+<!-- 时钟 -->
+<div class="clock">
+  <div class="t">16:10:24</div>
+  <div class="d">9月12日 · 星期六</div>
+  <div class="s">☀️ 白昼 · ☀️ 晴天</div>
+</div>
+
+<!-- 星体与标签 -->
+<div class="planet"></div>
+<div class="tag"><span class="ic"></span><b>费曼学习法真的有用吗？</b></div>
+<div class="note" style="left:1140px;top:600px">3</div>
+
+<!-- 看山 -->
+<div class="bubble">🦊 看山：这颗你已经炼过啦，再点「开始学」可以二刷巩固～</div>
+<div class="ks"><span class="ear l"></span><span class="ear r"></span><span class="body"></span><span class="eye l"></span><span class="eye r"></span><span class="arm l"></span><span class="arm r"></span><span class="foot l"></span><span class="foot r"></span></div>
+<div class="note" style="left:712px;top:368px">4</div>
+
+<!-- 炉温浮标 -->
+<div class="lv">🔥 炉温 120 · 炼金学徒 <span class="xp">XP ▮▮▮▯▯</span></div>
+<div class="note" style="left:910px;bottom:200px">5</div>
+
+<!-- 星体卡 -->
+<div class="card">
+  <div class="hd"><span class="ic"></span><span class="tt">费曼学习法真的有用吗？</span><span class="x">✕</span></div>
+  <div class="pills"><span class="pill">记忆与学习</span><span class="pill">8.4k 赞同</span><span class="pill">收藏于 3 天前</span><span class="pill g">✓ 已学懂</span></div>
+  <div class="core">核心观点：能不用术语、把一件事讲给外行听，才算真的会。</div>
+  <div class="prog"><span>冶炼进度 · 5/5 步</span><span class="bar"><i></i></span><span class="fw">🔥 炉温 0</span></div>
+  <div class="acts"><span class="b learn">再炼一遍</span><span class="b read">读原文</span><span class="b mind">思维导图</span></div>
+</div>
+
+<!-- 提示 -->
+<div class="hints">🖱 <b>拖拽</b>旋转 · <b>滚轮</b>缩放 · <b>点星体</b>查看 / 进入学习 · 星星大小 ≈ 热度<br>🦊 看山会随天气换动作</div>
+<div class="note" style="left:250px;bottom:60px">6</div>
+
+<!-- 图例 -->
+<div class="legend">
+  <h4>本稿改动点</h4>
+  <div><span class="n">1</span>天气组单高亮；「跟随实时」缩为小开关，仅一个绿点标记</div>
+  <div><span class="n">2</span>右侧控件统一深棕琥珀语言，去掉杂色</div>
+  <div><span class="n">3</span>白天场景加深加星点，轨道虚线可见，星体带紫晕</div>
+  <div><span class="n">4</span>看山气泡改深棕金边，融入 HUD 体系</div>
+  <div><span class="n">5</span>熔炉上方加「炉温 · 等级」浮标，大光球不再纯装饰</div>
+  <div><span class="n">6</span>操作提示套同款底板提亮，不再是暗字孤岛</div>
+</div>
+</body>
+</html>

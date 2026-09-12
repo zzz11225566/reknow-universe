@@ -30,6 +30,7 @@
 ## 2. 当前任务与进度（接手前先看这里）
 
 - **刚完成（9/12）**：「炼金宇宙优化——熔炉核心 + 星糖罐风」A→E 五批全部交付并回归通过（任务书：`docs/炼金宇宙优化-prompt.md` 或根目录 `炼金宇宙优化-prompt.md`）。批次0 熔炉核心（3D 炉火 → 底部 CSS `#uniHearth`、群星抬升、昼夜 HUD）+ A（内存/泄漏/帧率解耦）+ B（交互反馈/音效/空态）+ C（性能与内存复验/捏合/双击）+ D（雨雪氛围音/两级分层星海）+ E（星糖 shader 星体、糖丝 TubeGeometry 链路、新星诞生动画、`?fps=1` 角标、移动端几何减半）。只改 `universe.js` / `index.html`，硬约束全遵守（app/boot/data/server/vendor/assets 未动、file:// 可用、新状态进 `rkUni6` 子键）。备份链 `*.bak-unifix-20260912-pA~pE`（+各 pX0）在根目录，本地不入库。验证：`_uni_e_verify.cjs` + A/B/C/D 回归脚本全过（证据在 `evidence/_uni_e_*`）。
+- **刚完成（9/12）**：覆盖层互斥与移动端修复批。修复「先点已习得再点热榜，面板不互斥」同类问题共 5 处：`showHot()` 补 `hideKnow()+closeCard()`（与 `showKnow` 对称）、`U.exit()` 补收已习得面板与导图覆盖层（重进不再残留）、`rdOpen()` 补收已习得面板、Esc 分层链插入热榜/已习得两级（原只处理导图/阅读器/分类层）；移动端（≤760px）时钟从左上 `top:140px` 移左下（原位置挡住天气按钮带，点不到晴昼/雨夜）、看山气泡限宽右对齐防裁字。备份 `universe.js-bak-overlay-20260912`；验证 `_verify_overlay.cjs`（5 场景 PASS）+ `_verify_final.cjs`（五天气连切、双端截图 `_final_wx_*.png`/`_final_mob_*.png`、无横向溢出、零报错）。
 - **刚完成（9/12）**：按设计稿重做首页与顶栏（任务书：`docs/首页重做-prompt.md`，设计稿：`docs/首页重做-设计稿.jpg`）。桌面端 `evidence/_verify_desktop.png` 与移动端 `evidence/_verify_mobile.png` 均验证通过。
 - **9/11 完成的结构改版**：砍掉「思维图谱」「知识库」两个独立视图，功能并入炼金宇宙（`uniMind` 导图覆盖层 + `uniKnowPanel`「已习得」面板 + 交叉分析）。
 - **同日（9/12）工程整理**：v7 转正、`.git` 上移、目录收敛（docs/ scripts/ evidence/）。

@@ -855,14 +855,11 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 
 /* ============ 星体卡时钟 · 设计稿对齐（2026-09-12，参照 docs/星体卡时钟-设计稿.png） ============ */
 /* 时钟：左下方面板 → 左上悬浮式排版（大字时刻 + 日期 + 天气，无底板） */
-.uni-clock{left:20px;top:90px;bottom:auto;min-width:0;background:rgba(22,13,6,.58);border:1px solid rgba(255,200,110,.35);border-radius:14px;padding:12px 18px 13px;backdrop-filter:blur(8px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
-.uni-clock .t{font-size:2.3rem;font-weight:800;font-family:"Songti SC","STSong",SimSun,serif;color:#ffe9b8;letter-spacing:.06em;text-shadow:0 0 20px rgba(255,180,70,.5),0 2px 10px rgba(0,0,0,.6)}
-.uni-clock .d{color:rgba(255,236,196,.92);text-shadow:0 1px 6px rgba(0,0,0,.6)}
-.uni-clock .s{color:rgba(255,236,196,.85);text-shadow:0 1px 6px rgba(0,0,0,.6)}
-#uniShell[data-tod=day] .uni-clock{background:rgba(22,13,6,.5);border-color:rgba(255,200,110,.4)}
-/* 白天同样走金色系：深琥珀 + 亮光晕，保证在亮天空上的可读性 */
-#uniShell[data-tod=day] .uni-clock .t{color:#a86a08;text-shadow:0 1px 6px rgba(255,255,255,.65),0 0 16px rgba(255,220,150,.55)}
-#uniShell[data-tod=day] .uni-clock .d,#uniShell[data-tod=day] .uni-clock .s{color:rgba(146,94,10,.94);text-shadow:0 1px 4px rgba(255,255,255,.6)}
+.uni-clock{left:20px;top:90px;bottom:auto;min-width:0;background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.35);border-radius:14px;padding:12px 18px 13px;backdrop-filter:blur(8px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+/* 昼夜统一亮奶油金（有底板，无需按天空调暗）；Georgia 数字锐利，CJK 落微软雅黑；光晕收窄防发虚 */
+.uni-clock .t{font-size:2.3rem;font-weight:800;font-family:Georgia,"Songti SC","STSong","Microsoft YaHei",serif;color:#ffe9b8;letter-spacing:.06em;text-shadow:0 0 8px rgba(255,180,70,.35)}
+.uni-clock .d,.uni-clock .s{color:rgba(255,236,196,.9);text-shadow:none}
+#uniShell[data-tod=day] .uni-clock{background:rgba(22,13,6,.62);border-color:rgba(255,200,110,.4)}
 /* 星体卡：圆角 12 + 深棕糖芯底 + 金描边 */
 .uni-card{border-radius:12px;background:linear-gradient(180deg,rgba(40,29,20,.92),rgba(24,17,12,.95));border-color:rgba(232,180,110,.4)}
 .uni-card .uc-ico{border-radius:12px;border-color:rgba(255,255,255,.18)}
@@ -883,11 +880,9 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 .uc-bar i{background:linear-gradient(90deg,#e6862e,#ffb84d);animation:none}
 /* 白天模式返回钮：恢复熔金高亮（原被 #uniShell[data-tod=day] .uni-btn 规则压暗） */
 #uniShell[data-tod=day] .uni-btn.gold{background:linear-gradient(135deg,#ffc35e,#e6862e);color:#3a1c00;border-color:transparent;box-shadow:0 4px 16px rgba(230,134,46,.5);font-weight:700}
-/* 顶栏标题「炼金宇宙」：金色衬线 + 暖光辉应（设计稿 .brand 金色字） */
-.uni-brand b{font-size:1.06rem;font-weight:800;font-family:"Songti SC","STSong",SimSun,serif;letter-spacing:.05em;color:#ffd98a;text-shadow:0 0 14px rgba(230,150,60,.5),0 1px 6px rgba(0,0,0,.55)}
+/* 顶栏标题「炼金宇宙」：金色衬线 + 暖光辉应（设计稿 .brand 金色字）；昼夜同一亮金，CJK 落雅黑 */
+.uni-brand b{font-size:1.06rem;font-weight:800;font-family:"Songti SC","STSong",Georgia,"Microsoft YaHei",serif;letter-spacing:.05em;color:#ffd98a;text-shadow:0 0 10px rgba(230,150,60,.4)}
 .uni-brand small{color:rgba(255,220,160,.78)}
-#uniShell[data-tod=day] .uni-brand b{color:#a86a08;text-shadow:0 1px 5px rgba(255,255,255,.6),0 0 12px rgba(255,220,150,.5)}
-#uniShell[data-tod=day] .uni-brand small{color:rgba(146,94,10,.85)}
 /* 天气组（设计稿 .wx）：未选中=小字灰、选中=金字琥珀描边盒 */
 .uni-weather{gap:2px;padding:4px 6px}
 .wbtn{min-width:0;padding:4px 10px 3px;font-size:.6rem;color:rgba(255,255,255,.45)}
@@ -896,11 +891,34 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 .wbtn.on .we{opacity:1;font-size:1.05rem}
 #uniShell[data-tod=day] .wbtn{color:rgba(255,244,222,.6)}
 #uniShell[data-tod=day] .wbtn.on{color:#ffd98a;border-color:rgba(255,200,110,.65)}
-/* 移动端：时钟同步改为左上悬浮 */
+/* 移动端：时钟移到左下悬浮（顶栏换行后较高，放左上会与天气按钮带重叠挡点击） */
 @media(max-width:760px){
-  .uni-clock{left:12px;top:140px;bottom:auto;padding:10px 14px}
+  .uni-clock{left:12px;top:auto;bottom:14px;padding:10px 14px}
   .uni-clock .t{font-size:1.7rem}
+  /* 看山气泡在窄屏右缘会溢出裁字，改右对齐并限宽 */
+  .uni-fox .fb{left:auto;right:-6px;transform:none;width:200px;max-width:76vw}
+  .uni-fox .fb .fx{left:auto;right:26px}
 }
+/* ============ 整页设计稿 v2 落地（2026-09-12，参照 docs/宇宙页-设计稿-v2.png） ============ */
+/* ①「跟随实时」组尾小胶囊：绿点=推送中，灰点=手动 */
+.wbtn-live{display:inline-flex;align-items:center;gap:5px;margin:0 2px;padding:5px 11px;border-radius:999px;border:1px solid rgba(255,200,110,.35);background:rgba(230,162,60,.08);color:rgba(255,236,196,.7);font-size:.66rem;cursor:pointer;transition:.18s;line-height:1.2}
+.wbtn-live .dot{width:6px;height:6px;border-radius:50%;background:#6b6b6b;flex:none}
+.wbtn-live:hover{color:#ffd98a;border-color:rgba(255,200,110,.6)}
+.wbtn-live.on{background:rgba(230,162,60,.18);border-color:rgba(255,200,110,.65);color:#ffd98a;font-weight:700;box-shadow:0 0 12px rgba(230,150,60,.3)}
+.wbtn-live.on .dot{background:#37d67a;box-shadow:0 0 6px rgba(55,214,122,.8)}
+/* ④ 看山气泡：深棕金边，融入 HUD 体系（替换白底突兀气泡） */
+.uni-fox .fb{background:rgba(30,20,10,.92);border:1px solid rgba(255,200,110,.45);color:#ffe9c4;box-shadow:0 10px 26px rgba(0,0,0,.4);backdrop-filter:blur(6px)}
+.uni-fox .fb b{color:#ffd98a}
+.uni-fox .fb .fx{background:rgba(30,20,10,.92);border-right:1px solid rgba(255,200,110,.45);border-bottom:1px solid rgba(255,200,110,.45)}
+/* ⑤ 熔炉悬停浮标：炉温·等级·XP 条·连炼（默认隐藏，悬停熔炉浮现） */
+#uniHearth .uh-lv{position:absolute;left:50%;bottom:225px;transform:translate(-50%,8px);display:flex;align-items:center;gap:8px;background:rgba(22,13,6,.8);border:1px solid rgba(255,200,110,.5);border-radius:999px;padding:8px 18px;color:#ffd98a;font-size:.84rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.4);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;z-index:4}
+#uniHearth .uh-lv.on{opacity:1;transform:translate(-50%,0)}
+#uniHearth .uh-lv .xpb{width:64px;height:5px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+#uniHearth .uh-lv .xpb i{display:block;height:100%;background:linear-gradient(90deg,#e6862e,#ffb84d);border-radius:99px}
+/* ⑥ 操作提示：时钟同款深棕金边底板 + 暖金字，不再是暗字孤岛 */
+.uni-hints{background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.3);border-radius:12px;color:rgba(255,228,174,.85);backdrop-filter:blur(8px);box-shadow:0 6px 20px rgba(0,0,0,.3);padding:9px 14px}
+.uni-hints b{color:#ffd98a}
+#uniShell[data-tod=day] .uni-hints{background:rgba(22,13,6,.62)}
 </style>
 </head>
 <body>
