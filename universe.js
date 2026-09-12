@@ -905,102 +905,153 @@
     } catch (e) { return null; }
   }
 
-  /* 逐颗播放（间隔 0.8s）；找不到对应星体或播完即记入 played */
+  /* 流星雨：队列里的新星错峰 0.5s 一次性全部发射，相机缓动跟拍，全部落位后统一结算 played */
   function playBirthQueue(queue, pb) {
     if (!queue || !queue.length) return;
     if (birthPlaying) return; // 已在播放中（如 tick 兜底与进入触发撞车），跳过
     birthPlaying = true;
     if (!pb) pb = storeGet('pendingBirth', { list: [], played: [] });
-    var i = 0;
-    function next() {
-      if (i >= queue.length) { birthPlaying = false; return; }
-      var id = queue[i++];
+    var pending = 0, done = 0;
+    function finishOne() {
+      done++;
+      if (done < pending) return;
+      for (var k = 0; k < queue.length; k++) {
+        var qid = queue[k];
+        var li = pb.list.indexOf(qid); if (li >= 0) pb.list.splice(li, 1);
+        if (pb.played.indexOf(qid) < 0) pb.played.push(qid);
+      }
+      storeSet('pendingBirth', pb);
+      birthPlaying = false;
+      camState.auto = true; // 恢复缓慢自转
+    }
+    for (var i = 0; i < queue.length; i++) {
+      var id = queue[i];
       var st = null;
       for (var s = 0; s < stars.length; s++) { if (stars[s].id === id) { st = stars[s]; break; } }
-      if (!st || st.isCluster) {
-        var li = pb.list.indexOf(id); if (li >= 0) pb.list.splice(li, 1);
-        if (pb.played.indexOf(id) < 0) pb.played.push(id);
-        storeSet('pendingBirth', pb);
-        next();
-        return;
-      }
-      animateBirth(st, function () {
+      if (!st || st.isCluster) { // 找不到星体：立即结算
         var li2 = pb.list.indexOf(id); if (li2 >= 0) pb.list.splice(li2, 1);
         if (pb.played.indexOf(id) < 0) pb.played.push(id);
         storeSet('pendingBirth', pb);
-        setTimeout(next, 800);
-      });
+        continue;
+      }
+      pending++;
+      (function (st2, delay) {
+        setTimeout(function () {
+          try { uniSfx('birth'); } catch (e) { }
+          launchMeteor(st2, finishOne);
+        }, delay);
+      })(st, i * 500);
     }
-    next();
+    if (!pending) { birthPlaying = false; return; }
+    camState.auto = false; camState.idle = 0; // 跟拍期间暂停自转
   }
 
-  /* 单颗诞生：CatmullRom 弧线飞行（炉火上空 → 目标星位），金色火球 + 拖尾，落位弹性胀开 */
-  function animateBirth(st, done) {
-    try { uniSfx('birth'); } catch (e) { }
+  /* 单颗流星：炉火上空 → 星位的弧线，彗尾光带（相机朝向三角带）+ 金色头部，落位闪白+光环 */
+  function launchMeteor(st, done) {
     birthFlying[st.id] = true;
+    try { st.label.material.opacity = 0; } catch (e) { } // 标签落位后淡入
+    var h = starHash(st.id) % 100 / 100;
     var start = new T.Vector3(0, GALAXY_LIFT - 2.6, 4.0);
     var end = new T.Vector3(st.base[0], st.base[1], st.base[2]);
-    var mid = start.clone().lerp(end, 0.5); mid.y += 4.5;
-    var curve = new T.CatmullRomCurve3([start, mid, end]);
-    var fire = new T.Mesh(new T.SphereGeometry(0.22, 16, 12), new T.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0.95 }));
-    var fireGlow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(0xffd98a), transparent: true, opacity: 0.85, blending: T.AdditiveBlending, depthWrite: false }));
-    fireGlow.scale.set(1.6, 1.6, 1);
-    fire.add(fireGlow);
-    // 拖尾：滚动位置缓冲
-    var N = IS_TOUCH ? 30 : 60;
-    var trailGeo = new T.BufferGeometry();
-    var posArr = new Float32Array(N * 3);
-    for (var i = 0; i < N; i++) { posArr[i * 3] = start.x; posArr[i * 3 + 1] = start.y; posArr[i * 3 + 2] = start.z; }
-    trailGeo.setAttribute('position', new T.BufferAttribute(posArr, 3));
-    var trail = new T.Points(trailGeo, new T.PointsMaterial({ color: 0xffe6a8, size: 0.14, map: softTex, transparent: true, opacity: 0.7, blending: T.AdditiveBlending, depthWrite: false }));
-    scene.add(fire); scene.add(trail);
-    birthAnims.push({ id: st.id, st: st, t0: eTime, phase: 'fly', fire: fire, trail: trail, trailGeo: trailGeo, N: N, curve: curve, done: done, ring: null });
+    var m1 = start.clone().lerp(end, 0.25); m1.y += 1.2 + h * 1.5;   // 起跑上扬
+    var m2 = start.clone().lerp(end, 0.62); m2.y += 3.0 + h * 3.2;   // 顶弧（每颗不同）
+    var curve = new T.CatmullRomCurve3([start, m1, m2, end]);
+    var dur = 1.9 + h * 0.9;
+    var head = new T.Mesh(new T.SphereGeometry(0.15, 16, 12), new T.MeshBasicMaterial({ color: 0xfff6dd }));
+    var hglow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(0xffd98a), transparent: true, opacity: 0.95, blending: T.AdditiveBlending, depthWrite: false }));
+    hglow.scale.set(2.3, 2.3, 1);
+    head.add(hglow);
+    // 彗尾光带
+    var SEG = IS_TOUCH ? 14 : 22;
+    var geo = new T.BufferGeometry();
+    geo.setAttribute('position', new T.BufferAttribute(new Float32Array((SEG + 1) * 2 * 3), 3));
+    geo.setAttribute('color', new T.BufferAttribute(new Float32Array((SEG + 1) * 2 * 3), 3));
+    var idx = [];
+    for (var q = 0; q < SEG; q++) { var a2 = q * 2; idx.push(a2, a2 + 1, a2 + 2, a2 + 1, a2 + 3, a2 + 2); }
+    geo.setIndex(idx);
+    var tail = new T.Mesh(geo, new T.MeshBasicMaterial({ vertexColors: true, blending: T.AdditiveBlending, transparent: true, depthWrite: false, side: T.DoubleSide }));
+    scene.add(head); scene.add(tail);
+    birthAnims.push({ id: st.id, st: st, t0: eTime, dur: dur, curve: curve, head: head, tail: tail, geo: geo, seg: SEG, done: done, ring: null });
   }
 
   function stepBirthAnims(now) {
+    var anyFly = false;
+    var cx = 0, cy = 0, cz = 0, cn = 0, minx = 1e9, maxx = -1e9;
     for (var i = birthAnims.length - 1; i >= 0; i--) {
       var a = birthAnims[i];
-      if (a.phase === 'fly') {
-        var k = Math.min(1, (now - a.t0) / 2.4);
+      if (now < a.t0) continue;
+      var k = (now - a.t0) / a.dur;
+      if (a.phase !== 'land' && k < 1) {
+        anyFly = true;
         var p = a.curve.getPoint(k);
-        a.fire.position.copy(p);
-        var arr = a.trailGeo.attributes.position.array;
-        // 滚动：后面的点继承前一个位置（拖尾）
-        for (var j = a.N - 1; j > 0; j--) { arr[j * 3] = arr[(j - 1) * 3]; arr[j * 3 + 1] = arr[(j - 1) * 3 + 1]; arr[j * 3 + 2] = arr[(j - 1) * 3 + 2]; }
-        arr[0] = p.x; arr[1] = p.y; arr[2] = p.z;
-        a.trailGeo.attributes.position.needsUpdate = true;
-        if (k >= 1) {
-          a.phase = 'land'; a.t0 = now;
-          a.st.born = now; // tick 星体循环据此弹性胀开
-          // 落位扩散光环
-          a.ring = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(0xffd98a), transparent: true, opacity: 0.7, blending: T.AdditiveBlending, depthWrite: false }));
-          a.ring.position.copy(p);
-          a.st.group.add(a.ring); // 跟随星体浮动
-          scene.remove(a.fire);
-          if (a.fire.geometry) a.fire.geometry.dispose();
-          if (a.fire.material) a.fire.material.dispose();
-          a.fire = null;
+        a.head.position.copy(p);
+        var hb = 1 + Math.sin(now * 14) * 0.08;
+        a.head.scale.setScalar(hb);
+        // 彗尾：沿曲线回溯，宽度/亮度递减，朝向相机展开
+        var pa = a.geo.attributes.position.array, ca = a.geo.attributes.color.array;
+        var camDir = camera.position.clone().sub(p).normalize();
+        for (var j = 0; j <= a.seg; j++) {
+          var tj = Math.max(0, k - (j / a.seg) * 0.22);
+          var pj = a.curve.getPoint(tj);
+          var tan = a.curve.getPoint(Math.min(1, tj + 0.012)).sub(pj).normalize();
+          var perp = new T.Vector3().crossVectors(tan, camDir).normalize();
+          var w = 0.05 + 0.13 * (1 - j / a.seg);
+          var o = j * 6;
+          pa[o] = pj.x + perp.x * w; pa[o + 1] = pj.y + perp.y * w; pa[o + 2] = pj.z + perp.z * w;
+          pa[o + 3] = pj.x - perp.x * w; pa[o + 4] = pj.y - perp.y * w; pa[o + 5] = pj.z - perp.z * w;
+          var f = 1 - j / a.seg; f = f * f;
+          ca[o] = f; ca[o + 1] = f * 0.87; ca[o + 2] = f * 0.55;
+          ca[o + 3] = f; ca[o + 4] = f * 0.87; ca[o + 5] = f * 0.55;
         }
-      } else { // land：0.7s 后清理
-        var lk = Math.min(1, (now - a.t0) / 0.7);
+        a.geo.attributes.position.needsUpdate = true;
+        a.geo.attributes.color.needsUpdate = true;
+        cx += p.x; cy += p.y; cz += p.z; cn++;
+        if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x;
+      } else if (a.phase !== 'land') {
+        // 落位：弹性胀开 + 闪白 + 扩散光环 + 标签淡入
+        a.phase = 'land'; a.t0 = now;
+        a.st.born = now;
+        a.st.flashAt = now;
+        scene.remove(a.head);
+        if (a.head.geometry) a.head.geometry.dispose();
+        if (a.head.material) a.head.material.dispose();
+        a.head = null;
+        scene.remove(a.tail);
+        if (a.geo) a.geo.dispose();
+        if (a.tail.material) a.tail.material.dispose();
+        a.tail = null;
+        a.ring = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(0xffe2a8), transparent: true, opacity: 0.85, blending: T.AdditiveBlending, depthWrite: false }));
+        a.ring.scale.set(0.4, 0.4, 1);
+        a.st.group.add(a.ring);
+      } else {
+        var lk = Math.min(1, (now - a.t0) / 0.8);
         if (a.ring) {
-          var s = 1 + lk * 3;
-          a.ring.scale.set(s, s, 1);
-          a.ring.material.opacity = 0.7 * (1 - lk);
+          var rs = 0.4 + lk * 4.2;
+          a.ring.scale.set(rs, rs, 1);
+          a.ring.material.opacity = 0.85 * (1 - lk);
         }
+        try { a.st.label.material.opacity = Math.min(1, lk * 1.8); } catch (e) { }
         if (lk >= 1) {
           if (a.ring) {
             a.st.group.remove(a.ring);
             if (a.ring.material) a.ring.material.dispose();
           }
-          scene.remove(a.trail);
-          if (a.trailGeo) a.trailGeo.dispose();
-          if (a.trail.material) a.trail.material.dispose();
           delete birthFlying[a.id];
           birthAnims.splice(i, 1);
           try { if (a.done) a.done(); } catch (e) { }
         }
       }
+    }
+    // 相机跟拍：视线缓动到飞行中的流星 centroid，距离按散布自适应；用户拖拽时让位
+    if (anyFly && cn > 0 && !drag) {
+      ensureCamVec();
+      var spF = 0.045;
+      focusP.x += (cx / cn - focusP.x) * spF;
+      focusP.y += (cy / cn - focusP.y) * spF;
+      focusP.z += (cz / cn - focusP.z) * spF;
+      var spread = Math.max(2, maxx - minx);
+      var want = clamp(7.5 + spread * 0.9, 9, 15);
+      camState.dist += (want - camState.dist) * spF;
     }
   }
 
@@ -1175,9 +1226,10 @@
     byId('urMeta').innerHTML = '<span class="ava">' + (t.author || '答').slice(0, 1) + '</span><span>' + esc(t.author || '知乎答主') + ' · 高赞回答 · <span class="v">▲ ' + fmtV(t.votes) + '</span></span><span>' + esc(th.icon + ' ' + th.name) + '</span>';
     byId('urCnt').textContent = '';
     byId('uniReader').classList.add('on');
-    // 若有星体卡开着，收起避免重叠
+    // 若有星体卡/面板开着，收起避免重叠（阅读器全覆盖右侧）
     closeCard();
     hideHot();
+    hideKnow();
     rdPaintNotes();
     uniSfx('open');
     setTimeout(function () { body.focus(); }, 60);
@@ -1419,6 +1471,8 @@
     });
   }
   function showHot() {
+    /* 与 showKnow 对称：打开热榜时收起已习得面板与星体卡，避免同位置叠加 */
+    hideKnow(); closeCard();
     byId('uniHotPanel').classList.add('on');
     byId('uniHotSrc').textContent = (curServer && curServer.live) ? '实时 · 后端推送' : '本地示例';
   }
@@ -1629,6 +1683,11 @@
         if (st.mat.uniforms) {
           st.mat.uniforms.uTime.value = eTime;
           st.mat.uniforms.uDim.value = dimBase;
+          if (st.flashAt) { // E3：诞生落位闪白衰减
+            var fk = (eTime - st.flashAt) / 0.8;
+            st.mat.uniforms.uHi.value = fk >= 1 ? 0 : (1 - fk);
+            if (fk >= 1) st.flashAt = 0;
+          }
         }
       }
       if (st.learned) { // E1：呼吸式发光纳入天气通道 starO/dustO
@@ -2069,6 +2128,8 @@
     byId('uniShell').setAttribute('aria-hidden', 'true');
     closeCard();
     hideHot();
+    hideKnow(); // 退出时一并收起，避免重进宇宙时面板还挂着
+    try { closeUniMind(); } catch (e) {}
     try { if (AMB.rain) AMB.rain.target = 0.0001; if (AMB.snow) AMB.snow.target = 0.0001; } catch (e) {} // D1：退出宇宙氛围音淡出
     if (rd.topic) rdClose();
     if (U.__ws) { try { U.__ws.close(); } catch (e) {} U.__ws = null; }
@@ -2353,7 +2414,7 @@
     try { playPendingBirth(); } catch (e) { }
   };
   /* D2：Esc 分层返回 —— 捕获期执行，先于 boot 的「退出宇宙」监听。
-     优先级：导图覆盖层 > 阅读器（其自身冒泡监听处理） > 分类层 > 退出宇宙 */
+     优先级：导图覆盖层 > 阅读器（其自身冒泡监听处理） > 热榜/已习得面板 > 分类层 > 退出宇宙 */
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     var m = byId('uniMind');
@@ -2361,6 +2422,8 @@
     var shell = byId('uniShell');
     if (!shell || !shell.classList.contains('on')) return;
     if (byId('uniReader').classList.contains('on')) return; // 让阅读器自己的 Esc 处理
+    if (byId('uniHotPanel').classList.contains('on')) { hideHot(); e.stopPropagation(); e.preventDefault(); return; }
+    if (byId('uniKnowPanel') && byId('uniKnowPanel').classList.contains('on')) { hideKnow(); e.stopPropagation(); e.preventDefault(); return; }
     if (scope && scope !== '*') { setScope(null); e.stopPropagation(); }
   }, true);
 
