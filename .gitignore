@@ -42,3 +42,23 @@ _draft_uni_*.html
 _draft_uni_*
 _uni_*
 *.bak-*
+
+# 备份副本（本地留档，不入库）
+*-pB
+*-bak-*
+index.html-pB
+
+# 演示录屏（大文件，留本地）
+page@*.webm
+
+# 过程稿验证脚本与截图（设计稿比稿 scratch，留本地）
+_cmp*
+_sky*
+_align_*
+_diag_*
+_full*
+_shot_*
+_xpcheck*
+_v2verify*
+_v2_*.png
+_syntax_port.cjs
