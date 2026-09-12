@@ -1,0 +1,8 @@
+# 统一换行符：文本文件入库一律 LF、签出 LF，避免跨平台 phantom diff
+* text=auto eol=lf
+
+# 二进制资源不转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary

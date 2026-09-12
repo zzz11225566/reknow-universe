@@ -730,6 +730,79 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 .shelf-head .h-ico{border-radius:4px}
 .pick-bar,.custom-panel{border-radius:4px}
 .tag,.btn{border-radius:4px}
+/* ============================================================
+   批次0 · 熔炉核心 HUD（2026-09-12 追加区）
+   纯追加覆盖：不改上方既有规则语义、不动任何现有 id/class 钩子；
+   昼夜适配依赖 universe.js 注入的 #uniShell[data-tod=day|dusk|night]
+   ============================================================ */
+
+/* ---- 底部 CSS 熔炉（替代已移除的 3D 中央炼金炉；#uniHearth 由 universe.js 注入） ---- */
+#uniHearth{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:min(680px,120vw);height:350px;pointer-events:none;z-index:3;overflow:hidden}
+#uniHearth .uh-glow{position:absolute;left:50%;bottom:-185px;transform:translateX(-50%);width:660px;height:330px;border-radius:330px 330px 0 0;background:radial-gradient(340px 210px at 50% 0%,#fff0c2,#ffb43c 44%,#e05e00 70%,rgba(122,30,0,0) 100%);filter:blur(7px);animation:uhGlow 3.6s ease-in-out infinite}
+@keyframes uhGlow{50%{opacity:.8}}
+#uniHearth .uh-ring{position:absolute;left:50%;bottom:-320px;transform:translateX(-50%);width:640px;height:640px;border-radius:50%;border:1px solid rgba(230,162,60,.42);box-shadow:0 0 44px rgba(255,140,30,.22),inset 0 0 64px rgba(255,140,30,.14)}
+#uniHearth .uh-embers i{position:absolute;bottom:44px;width:5px;height:5px;border-radius:50%;background:radial-gradient(circle,#ffe9b8,#e6862e);box-shadow:0 0 8px 2px rgba(230,134,46,.5);opacity:0;animation:uhRise 7s linear infinite}
+#uniHearth .uh-embers i:nth-child(1){left:38%;animation-delay:0s}
+#uniHearth .uh-embers i:nth-child(2){left:46%;animation-delay:1.3s;animation-duration:8s}
+#uniHearth .uh-embers i:nth-child(3){left:54%;animation-delay:2.7s}
+#uniHearth .uh-embers i:nth-child(4){left:61%;animation-delay:.6s;animation-duration:6s}
+#uniHearth .uh-embers i:nth-child(5){left:30%;animation-delay:3.5s;animation-duration:9s}
+#uniHearth .uh-embers i:nth-child(6){left:68%;animation-delay:2s;animation-duration:7.5s}
+@keyframes uhRise{0%{transform:translate(0,0) scale(1);opacity:0}8%{opacity:.95}100%{transform:translate(30px,-430px) scale(.35);opacity:0}}
+/* 白天：炉火转弱为「余烬」，不抢浅蓝天空的戏 */
+#uniShell[data-tod=day] #uniHearth .uh-glow{opacity:.5;filter:blur(9px)}
+#uniShell[data-tod=day] #uniHearth .uh-ring{opacity:.45}
+#uniShell[data-tod=day] #uniHearth .uh-embers i{animation-play-state:paused;opacity:0}
+#uniShell[data-tod=dusk] #uniHearth .uh-glow{opacity:.88}
+
+/* ---- HUD 基调：曜石底 + 熔金描边（4px 方角） ---- */
+.uni-top{background:linear-gradient(180deg,rgba(14,9,5,.9),rgba(14,9,5,0))}
+.uni-brand b{letter-spacing:.03em;background:linear-gradient(180deg,#fff0d0,#e6a23c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 6px rgba(20,10,2,.5))}
+.uni-brand small{color:rgba(255,228,174,.6)}
+.uni-panel{background:linear-gradient(180deg,rgba(30,20,10,.93),rgba(16,11,6,.93));border:1px solid rgba(230,162,60,.42);border-radius:4px;box-shadow:0 20px 50px rgba(0,0,0,.6),inset 0 0 40px rgba(230,140,40,.05)}
+.uni-panel .up-head{border-bottom:1px solid rgba(230,162,60,.28);background:linear-gradient(180deg,rgba(230,162,60,.12),transparent)}
+.uni-panel .up-head b{color:#ffe4ae;letter-spacing:.03em}
+.uni-card{background:linear-gradient(180deg,rgba(30,20,10,.94),rgba(18,12,7,.94));border:1px solid rgba(230,162,60,.45);border-radius:4px;box-shadow:0 18px 46px rgba(0,0,0,.6),0 0 24px rgba(230,140,40,.12)}
+.uni-clock{background:rgba(14,9,5,.72);border:1px solid rgba(230,162,60,.4);border-radius:4px;backdrop-filter:blur(8px)}
+.uni-clock .t{color:#ffe9bd;font-family:"Songti SC","STSong",SimSun,serif;text-shadow:0 0 16px rgba(230,134,46,.4)}
+.uni-clock .d,.uni-clock .s{color:rgba(255,228,174,.6)}
+.uni-hints{color:rgba(255,228,174,.65);background:rgba(14,9,5,.55);border:1px solid rgba(230,162,60,.22);border-radius:4px}
+.uni-weather{background:rgba(18,11,5,.72);border:1px solid rgba(230,162,60,.3);border-radius:4px}
+.wbtn{border-radius:4px;color:rgba(243,232,210,.72)}
+.wbtn:hover{background:rgba(230,162,60,.1);color:#ffe4ae}
+.wbtn.on{background:linear-gradient(135deg,rgba(255,195,94,.28),rgba(230,134,46,.18));border-color:rgba(230,162,60,.6);color:#ffe4ae;box-shadow:0 0 10px rgba(230,134,46,.3)}
+.uni-search{background:rgba(255,244,222,.07);border-color:rgba(230,162,60,.35);color:#ffe4ae}
+.uni-search::placeholder{color:rgba(255,228,174,.4)}
+.uni-search:focus{border-color:#e6a23c;background:rgba(255,244,222,.12)}
+.uni-btn{background:rgba(255,244,222,.08);border-color:rgba(230,162,60,.4);color:#ffe4ae}
+.uni-btn.gold{background:linear-gradient(135deg,#ffc35e,#e6862e);color:#3a1c00;border:none;box-shadow:0 4px 14px rgba(230,134,46,.35)}
+.uni-env{background:rgba(230,162,60,.1);border-color:rgba(230,162,60,.32);color:rgba(255,228,174,.85)}
+.uni-load{background:radial-gradient(900px 500px at 50% 40%,#241505,#0c0805)}
+
+/* ---- 星体卡：熔金细节 ---- */
+.uni-card .tg{background:rgba(230,162,60,.1);border-color:rgba(230,162,60,.3);color:rgba(255,228,174,.85)}
+.uni-card .uc-core{background:rgba(124,92,255,.1);border-left-color:#9a86ff;color:rgba(243,232,210,.88)}
+.uni-card .b1{border-radius:4px}
+.uni-card .b1.learn{background:linear-gradient(135deg,#ffc35e,#e6862e);color:#3a1c00}
+.uni-card .b1.read{background:transparent;border:1px solid rgba(230,162,60,.45);color:#ffe4ae}
+
+/* ---- 炉温熔金进度条（星体卡） ---- */
+.uc-prog{margin:12px 0 2px}
+.uc-prog-t{display:flex;justify-content:space-between;font-size:.72rem;color:rgba(255,228,174,.7);margin-bottom:5px}
+.uc-prog-xp{color:#ffd98a;font-weight:700}
+.uc-bar{height:8px;border-radius:4px;background:#221304;border:1px solid rgba(230,162,60,.35);overflow:hidden}
+.uc-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#7a2e00,#e6862e 40%,#ffd98a 50%,#e6862e 60%,#7a2e00);background-size:200% 100%;animation:ucMolt 2.4s linear infinite}
+@keyframes ucMolt{to{background-position:-200% 0}}
+
+/* ---- 白天适配：浮层加护，保证金色文字在浅蓝天空可读 ---- */
+#uniShell[data-tod=day] .uni-brand b{filter:drop-shadow(0 1px 5px rgba(30,16,2,.65))}
+#uniShell[data-tod=day] .uni-brand small{color:rgba(74,44,10,.9);text-shadow:0 1px 4px rgba(255,255,255,.55)}
+#uniShell[data-tod=day] .uni-clock{background:rgba(16,10,5,.78);border-color:rgba(160,106,0,.55)}
+#uniShell[data-tod=day] .uni-hints{background:rgba(16,10,5,.62)}
+#uniShell[data-tod=day] .uni-weather{background:rgba(20,12,5,.78);border-color:rgba(160,106,0,.45)}
+#uniShell[data-tod=day] .uni-search{background:rgba(20,12,5,.35);border-color:rgba(160,106,0,.5)}
+#uniShell[data-tod=day] .uni-btn{background:rgba(20,12,5,.4);border-color:rgba(160,106,0,.5)}
+#uniShell[data-tod=day] .uni-env{background:rgba(20,12,5,.4);border-color:rgba(160,106,0,.45)}
 </style>
 </head>
 <body>
@@ -800,7 +873,7 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 
 </main>
 
-<footer class="appfoot">炼知 ReKnow v6 · 炼金宇宙版 · 知乎黑客松 2026「知识炼金场」赛道 · <a href="策划书.html" target="_blank">项目策划书</a> · <a href="使用指南.html" target="_blank">用户使用指南</a> · 看山形象仅赛事用途</footer>
+<footer class="appfoot">炼知 ReKnow v6 · 炼金宇宙版 · 知乎黑客松 2026「知识炼金场」赛道 · <a href="docs/策划书.html" target="_blank">项目策划书</a> · <a href="docs/使用指南.html" target="_blank">用户使用指南</a> · 看山形象仅赛事用途</footer>
 
 <div class="fox-help">
   <div class="fox-bubble" id="foxBubble"></div>

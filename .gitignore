@@ -37,3 +37,8 @@ temp/
 # 工作区归档与进行中草稿（不入库）
 archive/
 _draft_uni_*.html
+
+# 设计草稿与临时验证产物（熔炉改造会话的 scratch，不入库）
+_draft_uni_*
+_uni_*
+*.bak-*

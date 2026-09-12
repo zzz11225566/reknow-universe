@@ -38,17 +38,19 @@ node server.js
 
 ```
 炼知ReKnow-v6·宇宙版/
-├─ index.html          主应用（原版 + 宇宙入口/覆盖层/阅读器 + 新 CSS）
-├─ app.js              原版应用逻辑（未改动，勿直接大改——见下）
+├─ index.html          主应用（骨架 + 几乎全部 CSS）
+├─ app.js              应用逻辑（含两代代码单体，勿大改——见下）
 ├─ data.js             演示选题数据（12 篇 + 自定义）
-├─ universe.js         ★ 宇宙 3D 场景 / 天气引擎 / 热榜搜索 / 原文圈点阅读器
+├─ universe.js         ★ 宇宙 3D 场景 / 天气引擎 / 热榜搜索 / 原文圈点阅读器 + v7 已习得面板
 ├─ boot.js             ★ 接入层：包裹 showView、懒加载 3D、注入入口、看山换动作
 ├─ vendor/three.min.js Three.js r160 UMD（离线）
 ├─ assets/*.gif        看山官方 6 动作
 ├─ server.js           可选实时后端（纯 Node 零依赖）
 ├─ package.json        后端启动脚本
-├─ 策划书.html         项目策划书（v6）
-└─ 使用指南.html       用户使用指南（v6）
+├─ docs/               策划书.html · 使用指南.html · 网站构建指导.md · 项目策划书.md · 任务书与设计稿
+├─ scripts/            Playwright 验证/截图脚本（_verify_port.cjs 等）
+├─ evidence/           验证截图与输出（证据产物）
+└─ AGENTS.md           给协作 AI 的上手文档（先读）
 ```
 
 ## 四、给开发者的说明

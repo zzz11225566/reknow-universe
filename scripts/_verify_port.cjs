@@ -1,10 +1,10 @@
-// 9/12 四补丁移植验证：修改版 file:// 打开 index（修改）.html
+// 9/12 四补丁移植验证：file:// 打开 index.html（修改版已于当日转正为正式文件名）
 const fs = require('fs');
 const { createRequire } = require('module');
 const req = createRequire('C:/Users/cxy/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.js');
 const pw = req('playwright');
 const DIR = 'C:/Users/cxy/Desktop/宇宙版';
-const URL = 'file:///' + DIR + '/index（修改）.html';
+const URL = 'file:///' + DIR + '/index.html';
 
 (async () => {
   const out = { console: [], pageErrors: [], checks: {} };
