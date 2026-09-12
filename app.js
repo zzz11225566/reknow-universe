@@ -57,7 +57,7 @@ function openAward(a){ $("awardIco").textContent=a.ico; $("awardT").textContent=
 function addXp(n){ S.xp+=n; paintStats(); }
 
 /* ---------- 视图 ---------- */
-function showView(v){ S.view=v; $("view-home").classList.toggle("on",v==="home"); $("view-flow").classList.toggle("on",v==="flow"); $("view-mind").classList.toggle("on",v==="mind"); $("view-lib").classList.toggle("on",v==="lib"); $("vBtnHome").classList.toggle("on",v==="home"); $("vBtnMind").classList.toggle("on",v==="mind"); $("vBtnLib").classList.toggle("on",v==="lib"); if(v==="home")renderHome(); else if(v==="mind")renderMind(); else if(v==="lib")renderLib(); else if(v==="flow")renderFlow(); window.scrollTo({top:0,behavior:"smooth"}); foxAuto(); paintStats(); }
+function showView(v){ S.view=v; var _tg=function(id,on){ var e=$(id); if(e) e.classList.toggle("on",on); }; _tg("view-home",v==="home"); _tg("view-flow",v==="flow"); _tg("vBtnHome",v==="home"); if(v==="home")renderHome(); else if(v==="flow")renderFlow(); window.scrollTo({top:0,behavior:"smooth"}); foxAuto(); paintStats(); } /* 修改版：思维图谱 / 知识库板块已并入炼金宇宙，不再有独立视图 */
 
 /* ================= 首页 ================= */
 function renderHome(){
@@ -67,7 +67,7 @@ function renderHome(){
   if(myItems.length){
     var myCards=myItems.map(function(t){ var th=themeOf(t.cat),col=t.custom?"#8a94a6":th.color;
       return '<div class="tcard tc" data-s="'+esc((t.q+" "+t.title+" "+t.author+" "+th.name).toLowerCase())+'" data-pick="'+t.id+'" style="--c:'+col+';--cs:'+(t.custom?"rgba(138,148,166,.14)":th.soft)+'"><span class="glow"></span>'+(S.learned[t.id]?'<span class="done-badge">✔ 已学懂</span>':(t.custom?'<span class="done-badge" style="background:#8a94a6">自建</span>':''))+'<div class="topline"><span style="font-size:.9rem">'+(t.custom?"🧪":th.icon)+'</span><span class="tag">'+(t.custom?"我的知识库":th.name)+'</span></div><div class="q">'+esc(t.q)+'</div><div class="auth">'+esc(t.author)+' · '+esc(t.time||"刚刚收藏")+'</div><div class="foot"><span style="margin-left:auto">'+(S.learned[t.id]?"复习":"开始学 →")+'</span>'+(t.custom?'<button class="del" data-del="'+t.id+'">🗑</button>':'')+'</div></div>'; }).join("");
-    myShelf='<div class="cat-shelf"><div class="shelf-head"><span class="h-ico" style="background:linear-gradient(135deg,#ffb347,#e6862e)">🧰</span><h2>我的知识库</h2><span class="cnt">'+myItems.length+' 篇 · 去「知识库」栏目管理</span></div><div class="grid3">'+myCards+'</div></div>';
+    myShelf='<div class="cat-shelf"><div class="shelf-head"><span class="h-ico" style="background:linear-gradient(135deg,#ffb347,#e6862e)">🧰</span><h2>已学懂 · 进炼金宇宙</h2><span class="cnt">'+myItems.length+' 篇 · 在 🌌 炼金宇宙里</span></div><div class="grid3">'+myCards+'</div></div>';
   }
   var shelves="";
   DEMO.themes.forEach(function(th){
@@ -78,17 +78,17 @@ function renderHome(){
     shelves+='<div class="cat-shelf tc" style="--c:'+th.color+';--cs:'+th.soft+'"><div class="shelf-head"><span class="h-ico pat-'+th.pattern+'" style="background:'+th.color+'">'+th.icon+'</span><h2>'+th.name+'</h2><span class="cnt">'+list.length+' 篇 · 已学懂 '+dl+'</span></div><div class="grid3">'+cards+'<div class="addcard" data-addcat="'+th.id+'"><span class="plus">+</span><span>加一个自己的选题</span></div></div></div>';
   });
   var pk=S.pickedId&&topicById(S.pickedId), pick="";
-  if(pk){ var col=themeOf(pk.cat).color; pick='<div class="pick-bar tc" style="--c:'+col+'"><span class="pb-ico" style="background:'+col+'">'+(pk.custom?"🧪":themeOf(pk.cat).icon)+'</span><div class="pb-t"><b>'+esc(pk.q)+'</b><small>'+esc(pk.title)+' · '+(S.learned[pk.id]?"你学过它":"还没学")+'</small></div><button class="btn primary arrow big" id="pbGo"><span class="arrowgo">'+(S.learned[pk.id]?"复习一遍":"开始学这篇")+' →</span></button>'+(learned>0?'<button class="btn" id="pbMind">思维图谱</button>':"")+'</div>'; }
+  if(pk){ var col=themeOf(pk.cat).color; pick='<div class="pick-bar tc" style="--c:'+col+'"><span class="pb-ico" style="background:'+col+'">'+(pk.custom?"🧪":themeOf(pk.cat).icon)+'</span><div class="pb-t"><b>'+esc(pk.q)+'</b><small>'+esc(pk.title)+' · '+(S.learned[pk.id]?"你学过它":"还没学")+'</small></div><button class="btn primary arrow big" id="pbGo"><span class="arrowgo">'+(S.learned[pk.id]?"复习一遍":"开始学这篇")+' →</span></button>'+(learned>0?'<button class="btn" id="pbMind">🌌 去炼金宇宙</button>':"")+'</div>'; }
   var customPanel='<div class="custom-panel tc" id="customPanel"><h3 style="margin-bottom:4px">🧪 自定义选题 · 搭建你自己的知识库</h3><p class="dim" style="font-size:.86rem;margin-bottom:16px">贴上你收藏的一段文字，炼知当场拆成知识点、陪你走完四种学习方式；建好的选题会收进「知识库」。</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="field"><label>你的问题 / 标题 *</label><input id="cTitle" placeholder="例如：怎么坚持每天背单词？"></div><div class="field"><label>放进哪个主题分类？</label><select id="cCat">'+DEMO.themes.map(function(t){return '<option value="'+t.id+'">'+t.icon+' '+t.name+'</option>';}).join("")+'</select></div></div><div class="field"><label>贴一段原文（可选，会现场拆解）</label><textarea id="cText" placeholder="把某篇回答/笔记贴进来，至少两三句"></textarea><div class="hint" id="cPrevBox"></div></div><div class="btnrow"><button class="btn primary" id="cCreate">造好它，开始学 →</button><button class="btn" id="cFill">先来段示例原文</button><button class="btn" id="cClose">收起</button></div></div>';
-  b.innerHTML='<div class="hero-band tc" style="--c:#0f88eb;--cs:rgba(15,136,235,.08)"><img class="herofox" src="assets/'+(learned>0?"pc.gif":"idle.gif")+'" alt="看山"><div class="big">把「收藏」，炼成「<span class="blue">自己的回答</span>」</div><div class="sub">四种学习方式（闯关 / 快问快答 / 听讲 / <b class="purple">AI 开杠</b>）把知识真正学懂；学完生成<b>能 DIY 的思维图谱</b>，还能<b>自建知识库</b>、记语录心得。<b>AI 反对你、与 AI 开杠，可以强化学习和记忆；学习不是孤立的，可以和实际紧密相连。</b>'+(learned>0?'&nbsp;已学懂 <b class="green">'+learned+'</b> 篇 🔥':'&nbsp;第一篇从「记忆与学习」开始。')+'</div><div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div class="searchbox"><span>🔍</span><input id="searchIn" placeholder="搜索选题 / 关键词 / 答主…" value="'+esc(S.search)+'"></div><button class="btn primary arrow" id="hbRandom"><span class="arrowgo">🎲 帮我挑一篇 →</span></button><button class="btn" id="hbLib">🧰 知识库</button><button class="btn" id="hbMind">🧠 思维图谱'+(learned?'':'（还没点亮）')+'</button></div></div><div class="helpline"><span class="fox-tag"><img src="assets/idle.gif" alt="看山"></span><div>看山：'+(learned===0?'挑一篇点卡片选中，底部会出现大按钮；学完它会进你的知识库。':'已学懂 '+learned+' 篇。去 🧠 思维图谱或 🧰 知识库看看。')+'</div></div>'+myShelf+shelves+customPanel+pick;
+  b.innerHTML='<div class="hero-band tc" style="--c:#0f88eb;--cs:rgba(15,136,235,.08)"><img class="herofox" src="assets/'+(learned>0?"pc.gif":"idle.gif")+'" alt="看山"><div class="big">把「收藏」，炼成「<span class="blue">自己的回答</span>」</div><div class="sub">四种学习方式（闯关 / 快问快答 / 听讲 / <b class="purple">AI 开杠</b>）把知识真正学懂；学完生成<b>能 DIY 的思维图谱</b>，并与<b>知识库</b>一起收进<b>炼金宇宙</b>。<b>AI 反对你、与 AI 开杠，可以强化学习和记忆；学习不是孤立的，可以和实际紧密相连。</b>'+(learned>0?'&nbsp;已学懂 <b class="green">'+learned+'</b> 篇 🔥':'&nbsp;第一篇从「记忆与学习」开始。')+'</div><div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div class="searchbox"><span>🔍</span><input id="searchIn" placeholder="搜索选题 / 关键词 / 答主…" value="'+esc(S.search)+'"></div><button class="btn primary arrow" id="hbRandom"><span class="arrowgo">🎲 帮我挑一篇 →</span></button><button class="btn" id="hbUni">🌌 炼金宇宙'+(learned?'（已收录 '+learned+' 篇）':'（还是空的）')+'</button></div></div><div class="helpline"><span class="fox-tag"><img src="assets/idle.gif" alt="看山"></span><div>看山：'+(learned===0?'挑一篇点卡片选中，底部会出现大按钮；学完它会进你的知识库。':'已学懂 '+learned+' 篇，都在 🌌 炼金宇宙里。')+'</div></div>'+myShelf+shelves+customPanel+pick;
   b.querySelectorAll(".tcard").forEach(function(el){ el.addEventListener("click",function(e){ if(e.target.closest(".del")) return; S.pickedId=el.getAttribute("data-pick"); sfx("click"); renderHome(); }); });
   b.querySelectorAll(".del").forEach(function(el){ el.addEventListener("click",function(e){ e.stopPropagation(); deleteCustom(el.getAttribute("data-del")); }); });
   b.querySelectorAll(".addcard").forEach(function(el){ el.addEventListener("click",function(){ openCustom(el.getAttribute("data-addcat")); }); });
   var pbt=$("pbGo"); if(pbt) pbt.addEventListener("click",function(){ enterFlow(S.pickedId); });
-  var pbm=$("pbMind"); if(pbm) pbm.addEventListener("click",function(){ showView("mind"); });
+  var pbm=$("pbMind"); if(pbm) pbm.addEventListener("click",function(){ showView("uni"); });
   $("hbRandom").addEventListener("click",function(){ var pool=allTopics().filter(function(t){return !S.learned[t.id];}); if(!pool.length) pool=allTopics(); S.pickedId=pool[Math.floor(Math.random()*pool.length)].id; toast("看山帮你挑了这篇"); renderHome(); });
-  $("hbMind").addEventListener("click",function(){ showView("mind"); });
-  $("hbLib").addEventListener("click",function(){ showView("lib"); });
+  var _hbu=$("hbUni"); if(_hbu) _hbu.addEventListener("click",function(){ showView("uni"); });
+
   var si=$("searchIn"); si.addEventListener("input",function(){ S.search=si.value; applySearch(); });
   $("cFill").addEventListener("click",function(){ var t=(document.getElementById("cTitle").value||"").trim()||"怎么做到每天坚持？"; document.getElementById("cText").value="很多人以为「坚持」靠意志力，其实靠的是降低门槛。把任务拆小到不可能失败，先让动作发生。方法要亲自试过才算数，收藏不是学习，动手才是。"; });
   $("cClose").addEventListener("click",function(){ $("customPanel").classList.remove("on"); });
@@ -226,14 +226,14 @@ function rF4(t){
   var th=themeOf(t.cat);
   var tabs=TABS.map(function(x){ return '<button class="tab'+(S.forgeTab===x[0]?" on":"")+'" data-tab="'+x[0]+'">'+x[1]+"</button>"; }).join("");
   $("flowBody").innerHTML='<div class="card tc" style="--c:'+(t.custom?"#8a94a6":th.color)+';--cs:'+th.soft+'"><h3>🧠 你的思维图谱（可 DIY）</h3><p class="dim" style="font-size:.86rem;margin-bottom:10px">拖拽节点、滑杆缩放、点「连线模式」自己连线——这张图是你的，怎么摆你说了算。</p>'+renderDiyMind(t)+
-    '<div class="btnrow"><button class="btn primary arrow big" id="f4go"><span class="arrowgo">出炉：去回流发布 →</span></button><button class="btn" id="f4mind">去思维图谱栏目</button></div></div>'+
+    '<div class="btnrow"><button class="btn primary arrow big" id="f4go"><span class="arrowgo">出炉：去回流发布 →</span></button><button class="btn" id="f4mind">去炼金宇宙看图谱</button></div></div>'+
     '<div class="card"><h3>🔗 融会贯通 · 学习不是孤立的</h3><p class="dim" style="font-size:.86rem;margin-bottom:4px">这个知识点，能和生活 / 学习 / 工作里的这些事接上——<b>学习不是孤立的，可以和实际紧密相连。</b></p><div class="fusion">'+fusionHtml(t)+'</div></div>'+
     '<div class="card"><h3>📦 带得走的产物</h3><div class="tabs" id="ftabs" style="margin-top:8px">'+tabs+'</div><div id="fpane"></div></div>';
   $("ftabs").addEventListener("click",function(e){ var tb=e.target.closest(".tab"); if(!tb) return; S.forgeTab=tb.getAttribute("data-tab"); renderFlow(); });
   $("fpane").innerHTML=paneHtml(t,S.forgeTab);
   var ti=$("titleInput"); if(ti) ti.addEventListener("input",function(){ S.titleText=ti.value; });
   $("f4go").addEventListener("click",function(){ goStep(5); });
-  var fm=$("f4mind"); if(fm) fm.addEventListener("click",function(){ showView("mind"); });
+  var fm=$("f4mind"); if(fm) fm.addEventListener("click",function(){ showView("uni"); });
   bindDiy(t);
 }
 /* 融会贯通 */
@@ -284,7 +284,7 @@ function rF5(t){
   else { var up=(S.learned[t.id].votes||128)+(S.learned[t.id].voted?1:0); body='<div class="celebrate"><img src="assets/wave.gif" alt="看山庆祝"><span class="goodtag" style="font-size:.92rem">已发布 · 带着原文引用回到知乎</span></div><div class="zh-card"><div class="zh-head"><span class="zh-ava">许</span><div><div style="font-size:.9rem;font-weight:600">小许 · 边学边写</div><div class="dim" style="font-size:.74rem">刚刚 · 编辑于知乎</div></div></div><div class="zh-title">'+esc(title)+'</div><div class="zh-body">'+esc(S.records[t.id].map.plain)+'……（全文见成果主页）<div class="cite">引用：'+t.blocks.map(function(b){return esc(b.src);}).join(" · ")+'</div></div><div class="zh-actions"><button class="zh-act'+(S.learned[t.id].voted?" voted":"")+'" id="bUp">▲ 赞同 '+up+'</button><span class="zh-act">💬 评论 '+(12+(S.learned[t.id].voted?3:0))+'</span><span class="zh-act">⭐ 收藏 '+(38+(S.learned[t.id].voted?5:0))+'</span><span class="zh-act">↗ 分享</span></div></div>'; }
   $("flowBody").innerHTML=body+'<div class="card"><h3>📊 我的炼金成果</h3><div class="metrics" style="margin-top:10px"><div class="met"><b>'+learnedCount()+'</b><span>已学懂</span></div><div class="met"><b>'+Object.keys(S.records).length+'</b><span>思维图谱</span></div><div class="met amber"><b>'+levelInfo().lv.name+'</b><span>段位 🔥</span></div><div class="met"><b>'+S.libs.length+'</b><span>知识库</span></div></div></div><div class="card"><h3>🎁 展示成果</h3><div class="btnrow"><button class="btn primary" id="bPoster">🖼 成果卡 PNG</button><button class="btn" id="bCopy">📋 复制成果</button><button class="btn" id="bAnki">导出复习卡</button><button class="btn" id="bMind">🧠 思维图谱</button></div></div>';
   if(!published){ $("flowBody").querySelectorAll("[data-pub]").forEach(function(el){ el.addEventListener("click",function(){ S.pubType=el.getAttribute("data-pub"); renderFlow(); }); }); $("bSave").addEventListener("click",function(){ markLearned(t,false); }); $("bPub").addEventListener("click",function(){ var b=$("bPub"); b.disabled=true; b.innerHTML="发布中…"; setTimeout(function(){ markLearned(t,true); },900); }); $("bAddLib").addEventListener("click",function(){ addToLib(t); }); } else { $("bUp").addEventListener("click",function(){ S.learned[t.id].voted=!S.learned[t.id].voted; save(); renderFlow(); }); }
-  $("bPoster").addEventListener("click",function(){ posterPng(t); }); $("bCopy").addEventListener("click",function(){ copyResult(t); }); $("bAnki").addEventListener("click",function(){ exportAnki(t); }); var bm=$("bMind"); if(bm) bm.addEventListener("click",function(){ showView("mind"); });
+  $("bPoster").addEventListener("click",function(){ posterPng(t); }); $("bCopy").addEventListener("click",function(){ copyResult(t); }); $("bAnki").addEventListener("click",function(){ exportAnki(t); }); var bm=$("bMind"); if(bm) bm.addEventListener("click",function(){ showView("uni"); });
 }
 function addToLib(t){ var lib=activeLib(); if(!lib) return; if(lib.entries.indexOf(t.id)<0){ lib.entries.push(t.id); save(); sfx("pop"); toast("已收进「"+lib.name+"」",true); } else toast("已经在「"+lib.name+"」里了"); }
 function markLearned(t,published){ var isNew=!S.learned[t.id]; if(!S.records[t.id]) buildRecord(t); S.learned[t.id]={published:published,votes:128+Math.floor(Math.random()*80),voted:false,at:new Date().toISOString()}; if(isNew){ S.streak++; if(!S.xpGiven[t.id]){ S.xpGiven[t.id]=true; addXp(200); } } save(); toast(published?"🎉 发布成功！炉火值 +200":"已存进成果",true); if(isNew){ sfx("win"); confetti(); } checkAwards(); renderFlow(); }
@@ -351,11 +351,11 @@ $("btnReset").addEventListener("click",function(){ try{ localStorage.removeItem(
 $("btnSnd").addEventListener("click",function(){ S.sound=!S.sound; $("btnSnd").textContent=S.sound?"🔊":"🔇"; $("btnSnd").classList.toggle("muted",!S.sound); save(); if(S.sound) sfx("click"); });
 try{ if(!localStorage.getItem("rkIntro")){ localStorage.setItem("rkIntro","1"); slideI=0; paintSlides(); $("ovOnboard").classList.add("on"); } }catch(e){}
 $("vBtnHome").addEventListener("click",function(){ showView("home"); });
-$("vBtnMind").addEventListener("click",function(){ showView("mind"); });
-$("vBtnLib").addEventListener("click",function(){ showView("lib"); });
+
+
 $("flowBack").addEventListener("click",function(){ showView("home"); });
-$("mindBack").addEventListener("click",function(){ showView("home"); });
-$("libBack").addEventListener("click",function(){ showView("home"); });
+
+
 document.addEventListener("click",function(e){ var fc=e.target.closest("#flash .fc"); if(fc){ fc.classList.toggle("flip"); sfx("click"); return; } var opt=e.target.closest(".opt"); if(opt&&opt.hasAttribute("data-q")){ var t=topicById(S.topicId); if(!t) return; var qi=+opt.getAttribute("data-q"),oi=+opt.getAttribute("data-o"); if(!S.quiz[t.id]) S.quiz[t.id]={}; if(S.quiz[t.id][qi]!==undefined) return; S.quiz[t.id][qi]=oi; var qs=buildQuiz(t),right=oi===qs[qi].ans; renderFlow(); if(right){ sfx("good"); confetti(); toast("答对了！🎉",true); } else { sfx("bad"); toast("差一点。"+qs[qi].why); } return; } var cl=e.target.closest(".checklist li"); if(cl&&cl.hasAttribute("data-a")){ var t2=topicById(S.topicId); if(!t2) return; var ai=+cl.getAttribute("data-a"); if(!S.act[t2.id]) S.act[t2.id]={}; if(S.act[t2.id][ai]) delete S.act[t2.id][ai]; else S.act[t2.id][ai]=true; sfx("pop"); renderFlow(); return; } });
 
 /* ================= 启动 ================= */
@@ -554,14 +554,14 @@ function rF4(t){
   var th=themeOf(t.cat);
   var tabs=TABS.map(function(x){ return '<button class="tab'+(S.forgeTab===x[0]?" on":"")+'" data-tab="'+x[0]+'">'+x[1]+"</button>"; }).join("");
   $("flowBody").innerHTML='<div class="card tc" style="--c:'+(t.custom?"#8a94a6":th.color)+';--cs:'+th.soft+'"><h3>🧠 思维导图 · 你的知识，你说了算</h3><p class="dim" style="font-size:.86rem;margin-bottom:6px">点节点看详情、双击改名、拖动移动、滑杆缩放、🎲 切 3D、🔗 连线、双击空白加新想法——每一步都自动保存。</p>'+renderMindMap(t)+
-    '<div class="btnrow"><button class="btn primary arrow big" id="f4go"><span class="arrowgo">出炉：去回流发布 →</span></button><button class="btn" id="f4mind">去思维图谱栏目</button></div></div>'+
+    '<div class="btnrow"><button class="btn primary arrow big" id="f4go"><span class="arrowgo">出炉：去回流发布 →</span></button><button class="btn" id="f4mind">去炼金宇宙看图谱</button></div></div>'+
     '<div class="card"><h3>🔗 融会贯通 · 学习不是孤立的</h3><div class="fusion">'+fusionHtml(t)+'</div></div>'+
     '<div class="card"><h3>📦 带得走的产物</h3><div class="tabs" id="ftabs" style="margin-top:8px">'+tabs+'</div><div id="fpane"></div></div>';
   $("ftabs").addEventListener("click",function(e){ var tb=e.target.closest(".tab"); if(!tb) return; S.forgeTab=tb.getAttribute("data-tab"); renderFlow(); });
   $("fpane").innerHTML=paneHtml(t,S.forgeTab);
   var ti=$("titleInput"); if(ti) ti.addEventListener("input",function(){ S.titleText=ti.value; });
   $("f4go").addEventListener("click",function(){ goStep(5); });
-  var fm=$("f4mind"); if(fm) fm.addEventListener("click",function(){ showView("mind"); });
+  var fm=$("f4mind"); if(fm) fm.addEventListener("click",function(){ showView("uni"); });
   bindMindMap(t);
 }
 
@@ -612,44 +612,44 @@ function renderMindMap(t){
   return '<div class="mm-wrap">'+tips+toolbar+'<div class="mm-canvas'+(st.mode3d?' mm3d':'')+'"><div class="mm-inner" id="mmInner" style="transform:'+(st.mode3d?'scale('+st.scale+') rotateX('+rx+'deg) rotateY('+ry+'deg)':'scale('+st.scale+')')+'"><svg viewBox="0 0 560 400" id="mmSvg"></svg>'+nodesHtml+'</div>'+detail+'</div></div>';
 }
 
-function bindMindMap(t){
+function bindMindMap(t,hostId){ var HOSTID=hostId||"flowBody"; window.__mmHost=HOSTID;
   var st=mmState(t); mmRedraw(t);
-  var zoom=$("mmZoom"), tilt=$("mmTilt"), inner=$("mmInner"), canvas=$("flowBody").querySelector(".mm-canvas");
+  var zoom=$("mmZoom"), tilt=$("mmTilt"), inner=$("mmInner"), canvas=$(HOSTID).querySelector(".mm-canvas");
   function applyTransform(){ var rx=st.rotX!==undefined?st.rotX:(st.tiltX||10), ry=st.rotY||0; if(inner) inner.style.transform=st.mode3d?('scale('+st.scale+') rotateX('+rx+'deg) rotateY('+ry+'deg)'):('scale('+st.scale+')'); }
   if(zoom) zoom.addEventListener("input",function(){ st.scale=+zoom.value; applyTransform(); save(); });
   if(tilt) tilt.addEventListener("input",function(){ st.rotX=+tilt.value; applyTransform(); save(); });
   /* 工具栏：只 renderFlow（rF4 会 bindMindMap 一次），杜绝重复绑定 */
-  $("flowBody").querySelectorAll("[data-act]").forEach(function(el){
+  $(HOSTID).querySelectorAll("[data-act]").forEach(function(el){
     el.addEventListener("click",function(){
       var a=el.getAttribute("data-act");
-      if(a==="mmadd"){ var p=S.mmSel&&st.nodes[S.mmSel]?S.mmSel:"core"; var pn=st.nodes[p]; mmAdd(t,pn.x+90,pn.y+70,p); S.mmSel=null; sfx("pop"); renderFlow(); }
-      else if(a==="mmundo"){ if(st.hi>0){ st.hi--; mmRestore(t,st.history[st.hi]); renderFlow(); } }
-      else if(a==="mmredo"){ if(st.hi<st.history.length-1){ st.hi++; mmRestore(t,st.history[st.hi]); renderFlow(); } }
-      else if(a==="mm3d"){ st.mode3d=!st.mode3d; save(); renderFlow(); }
+      if(a==="mmadd"){ var p=S.mmSel&&st.nodes[S.mmSel]?S.mmSel:"core"; var pn=st.nodes[p]; mmAdd(t,pn.x+90,pn.y+70,p); S.mmSel=null; sfx("pop"); mmRefresh(t,HOSTID); }
+      else if(a==="mmundo"){ if(st.hi>0){ st.hi--; mmRestore(t,st.history[st.hi]); mmRefresh(t,HOSTID); } }
+      else if(a==="mmredo"){ if(st.hi<st.history.length-1){ st.hi++; mmRestore(t,st.history[st.hi]); mmRefresh(t,HOSTID); } }
+      else if(a==="mm3d"){ st.mode3d=!st.mode3d; save(); mmRefresh(t,HOSTID); }
       else if(a==="mm3dopen"){ mm3dOpen(t); }
-      else if(a==="mmconnect"){ S.connectMode=!S.connectMode; save(); renderFlow(); }
+      else if(a==="mmconnect"){ S.connectMode=!S.connectMode; save(); mmRefresh(t,HOSTID); }
       else if(a==="mmexportpng"){ mmExportPng(t); }
       else if(a==="mmexportjson"){ mmExportJson(t); }
-      else if(a==="mmreset"){ delete S.mm[t.id]; S.mmSel=null; S.connectMode=false; renderFlow(); toast("已复位为初始图谱"); }
-      else if(a==="mmchild"){ if(S.mmSel){ var n=st.nodes[S.mmSel]; mmAdd(t,n.x+70,n.y+80,S.mmSel); S.mmSel=null; sfx("pop"); renderFlow(); } }
-      else if(a==="mmdel"){ mmDel(t,S.mmSel); renderFlow(); }
+      else if(a==="mmreset"){ delete S.mm[t.id]; S.mmSel=null; S.connectMode=false; mmRefresh(t,HOSTID); toast("已复位为初始图谱"); }
+      else if(a==="mmchild"){ if(S.mmSel){ var n=st.nodes[S.mmSel]; mmAdd(t,n.x+70,n.y+80,S.mmSel); S.mmSel=null; sfx("pop"); mmRefresh(t,HOSTID); } }
+      else if(a==="mmdel"){ mmDel(t,S.mmSel); mmRefresh(t,HOSTID); }
     });
   });
-  $("flowBody").querySelectorAll(".sw").forEach(function(el){ el.addEventListener("click",function(){ if(!S.mmSel) return; mmPush(t); st.nodes[S.mmSel].color=el.getAttribute("data-co"); save(); renderFlow(); }); });
-  var addNote=$("mmAddNote"); if(addNote) addNote.addEventListener("click",function(){ var v=($("mmNoteTa")||{value:""}).value.trim(); if(!v||!S.mmSel) return; mmNote(t,S.mmSel,v); renderFlow(); });
-  $("flowBody").querySelectorAll("[data-nd]").forEach(function(el){ el.addEventListener("click",function(){ mmDelNote(t,S.mmSel,el.getAttribute("data-nd")); renderFlow(); }); });
+  $(HOSTID).querySelectorAll(".sw").forEach(function(el){ el.addEventListener("click",function(){ if(!S.mmSel) return; mmPush(t); st.nodes[S.mmSel].color=el.getAttribute("data-co"); save(); mmRefresh(t,HOSTID); }); });
+  var addNote=$("mmAddNote"); if(addNote) addNote.addEventListener("click",function(){ var v=($("mmNoteTa")||{value:""}).value.trim(); if(!v||!S.mmSel) return; mmNote(t,S.mmSel,v); mmRefresh(t,HOSTID); });
+  $(HOSTID).querySelectorAll("[data-nd]").forEach(function(el){ el.addEventListener("click",function(){ mmDelNote(t,S.mmSel,el.getAttribute("data-nd")); mmRefresh(t,HOSTID); }); });
   /* 节点交互 */
-  $("flowBody").querySelectorAll(".mm-node").forEach(function(node){
+  $(HOSTID).querySelectorAll(".mm-node").forEach(function(node){
     var id=node.getAttribute("data-n");
     node.addEventListener("pointerdown",function(e){
-      if(S.connectMode){ e.preventDefault(); if(!S.mmSel){ S.mmSel=id; renderFlow(); } else { var a=S.mmSel,b=id; if(a!==b){ var dup=(st.edges||[]).some(function(ed){return (ed.a===a&&ed.b===b)||(ed.a===b&&ed.b===a);}); if(!dup){ st.edges.push({a:a,b:b}); mmPush(t); sfx("pop"); } } S.mmSel=null; renderFlow(); } return; }
+      if(S.connectMode){ e.preventDefault(); if(!S.mmSel){ S.mmSel=id; mmRefresh(t,HOSTID); } else { var a=S.mmSel,b=id; if(a!==b){ var dup=(st.edges||[]).some(function(ed){return (ed.a===a&&ed.b===b)||(ed.a===b&&ed.b===a);}); if(!dup){ st.edges.push({a:a,b:b}); mmPush(t); sfx("pop"); } } S.mmSel=null; mmRefresh(t,HOSTID); } return; }
       e.stopPropagation();
       var p=st.nodes[id],sx=e.clientX,sy=e.clientY,ox=p.x,oy=p.y,moved=false;
       function mv(ev){ var dx=ev.clientX-sx,dy=ev.clientY-sy; if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true; p.x=ox+dx/st.scale; p.y=oy+dy/st.scale; node.style.left=p.x+"px"; node.style.top=p.y+"px"; mmRedraw(t); }
-      function up(){ window.removeEventListener("pointermove",mv); window.removeEventListener("pointerup",up); if(!moved){ S.mmSel=id; sfx("click"); renderFlow(); } else { mmPush(t); save(); } }
+      function up(){ window.removeEventListener("pointermove",mv); window.removeEventListener("pointerup",up); if(!moved){ S.mmSel=id; sfx("click"); mmRefresh(t,HOSTID); } else { mmPush(t); save(); } }
       window.addEventListener("pointermove",mv); window.addEventListener("pointerup",up);
     });
-    node.addEventListener("dblclick",function(e){ e.stopPropagation(); var nb=node.querySelector(".nb"); if(!nb) return; nb.contentEditable="true"; nb.focus(); var sel=window.getSelection&&window.getSelection(); if(sel){ var r=document.createRange(); r.selectNodeContents(nb); sel.removeAllRanges(); sel.addRange(r); } function done(){ nb.contentEditable="false"; var v=(nb.textContent||"").trim(); if(v){ mmPush(t); st.nodes[id].text=v; save(); } renderFlow(); } nb.addEventListener("blur",done,{once:true}); nb.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); nb.blur(); } }); });
+    node.addEventListener("dblclick",function(e){ e.stopPropagation(); var nb=node.querySelector(".nb"); if(!nb) return; nb.contentEditable="true"; nb.focus(); var sel=window.getSelection&&window.getSelection(); if(sel){ var r=document.createRange(); r.selectNodeContents(nb); sel.removeAllRanges(); sel.addRange(r); } function done(){ nb.contentEditable="false"; var v=(nb.textContent||"").trim(); if(v){ mmPush(t); st.nodes[id].text=v; save(); } mmRefresh(t,HOSTID); } nb.addEventListener("blur",done,{once:true}); nb.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); nb.blur(); } }); });
   });
   /* 3D 真旋转：空白处拖拽旋转视角 */
   if(canvas){
@@ -661,7 +661,7 @@ function bindMindMap(t){
       function up(){ window.removeEventListener("pointermove",mv); window.removeEventListener("pointerup",up); save(); }
       window.addEventListener("pointermove",mv); window.addEventListener("pointerup",up);
     });
-    canvas.addEventListener("dblclick",function(e){ if(e.target.closest(".mm-node")) return; var r=canvas.getBoundingClientRect(); var x=(e.clientX-r.left)/st.scale, y=(e.clientY-r.top)/st.scale; mmAdd(t,x,y,S.mmSel||"core"); S.mmSel=null; renderFlow(); });
+    canvas.addEventListener("dblclick",function(e){ if(e.target.closest(".mm-node")) return; var r=canvas.getBoundingClientRect(); var x=(e.clientX-r.left)/st.scale, y=(e.clientY-r.top)/st.scale; mmAdd(t,x,y,S.mmSel||"core"); S.mmSel=null; mmRefresh(t,HOSTID); });
   }
   applyTransform();
 }
@@ -855,4 +855,11 @@ function lighten(hex, amt) {
   var r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
   var m = function (v) { v = amt >= 0 ? v + (255 - v) * amt : v * (1 + amt); return Math.max(0, Math.min(255, Math.round(v))); };
   return 'rgb(' + m(r) + ',' + m(g) + ',' + m(b) + ')';
+}
+
+/* ===== 修改版：让思维导图编辑器可挂到任意宿主（炼金宇宙的覆盖层） ===== */
+function mmRefresh(t,hostId){
+  var hid = hostId || window.__mmHost || "flowBody";
+  if(hid!=="flowBody" && $(hid)){ $(hid).innerHTML = renderMindMap(t,hid); bindMindMap(t,hid); }
+  else { renderFlow(); }   /* renderFlow -> rF4 内部已 bindMindMap 一次，勿重复绑定 */
 }

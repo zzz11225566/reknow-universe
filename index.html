@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -607,6 +607,129 @@ mark.ur-note::after{content:"📝";font-size:.62em;margin-left:1px;vertical-alig
   .uni-weather{position:static;order:5}
   .uni-card{left:10px;right:10px;bottom:150px;width:auto}
 }
+/* ===== v7：已习得知识面板 + 思维导图覆盖层 ===== */
+.uk-stat{display:flex;gap:8px;margin:4px 0 10px}
+.uk-stat>div{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 6px;text-align:center}
+.uk-stat b{display:block;font-size:1.05rem;color:#ffd98a}
+.uk-stat span{font-size:.72rem;opacity:.75}
+.uk-sec{margin:12px 0 6px;font-size:.82rem;color:#9fb0d0}
+.uk-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:9px 10px;margin-bottom:8px}
+.uk-q{font-size:.88rem;line-height:1.4;display:flex;gap:6px;align-items:flex-start}
+.uk-ico{width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;flex:none}
+.uk-meta{margin:6px 0 7px;display:flex;gap:6px;flex-wrap:wrap}
+.uk-acts{display:flex;gap:6px;flex-wrap:wrap}
+.uk-b{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#eaf0ff;border-radius:9px;padding:5px 9px;font-size:.76rem;cursor:pointer}
+.uk-b:hover{background:rgba(255,255,255,.2)}
+.uk-b.gold{background:rgba(230,162,60,.22);border-color:rgba(230,162,60,.5);color:#ffd98a}
+.uk-cross{font-size:.82rem;line-height:1.5;padding:6px 8px;background:rgba(255,255,255,.05);border-radius:9px;margin-bottom:5px}
+.uk-insight{font-size:.82rem;line-height:1.5;padding:8px;background:rgba(124,92,255,.18);border-radius:9px;margin-top:6px}
+.uk-lib{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:8px 9px;margin-bottom:8px}
+.uk-libhead{display:flex;gap:6px;align-items:center;font-size:.84rem;margin-bottom:6px;flex-wrap:wrap}
+.uk-libhead .li{width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem}
+.uk-entry{display:flex;gap:6px;align-items:center;font-size:.8rem;padding:4px 6px;background:rgba(255,255,255,.05);border-radius:8px;margin-bottom:4px}
+.uk-entry .q{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uk-note{display:flex;gap:6px;font-size:.78rem;padding:4px 6px;border-left:2px solid rgba(230,162,60,.6);margin:4px 0}
+.uk-note .tm{margin-left:auto;opacity:.6;font-size:.7rem}
+.uk-x{cursor:pointer;opacity:.6;padding:0 3px}
+.uk-x:hover{opacity:1;color:#ff8a8a}
+.uk-empty2{font-size:.76rem;opacity:.6;padding:4px 2px}
+.uk-noteadd{display:flex;gap:6px;margin-top:6px}
+.uk-in{flex:1;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:5px 8px;font-size:.78rem;min-width:70px}
+.uk-newlib{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.uni-panel .u-empty{padding:16px 10px;font-size:.85rem;line-height:1.8;opacity:.88}
+.uni-card .uc-acts .b1.mind{background:linear-gradient(135deg,#7c5cff,#5b6ef5)}
+.uni-mind{position:fixed;inset:0;z-index:300;background:rgba(4,8,18,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:18px}
+.uni-mind.on{display:flex}
+.um-box{width:min(1080px,96vw);height:min(86vh,900px);background:#0e1526;border:1px solid rgba(255,255,255,.16);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.um-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.12);color:#fff}
+.um-head b{font-size:.95rem}
+.um-head #umTitle{flex:1;font-size:.82rem;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.um-head .x{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:9px;padding:5px 10px;cursor:pointer}
+.um-body{flex:1;overflow:auto;background:#f7f8fa;padding:10px}
+/* ================================================================
+   首页视觉重做（对齐设计稿）：仅改本文件 · 白底 / 黑主按钮 / 金色宇宙入口 / 衬线大标题
+   ================================================================ */
+:root{--serif:"Songti SC","STSong","SimSun","NSimSun",serif;--ink:#1a1a1a;--gold-1:#fdf3d7;--gold-2:#f7e3ac;--gold-3:#e8c96a;--gold-4:#a06a00}
+/* --- 顶栏 --- */
+.appbar{background:rgba(255,255,255,.92);border-bottom:1px solid #eceef1}
+.brand{font-size:1.08rem}
+.brand .ava{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#3b8bf0,#0f66d0);box-shadow:0 4px 10px rgba(15,102,208,.28);display:grid;place-items:center}
+.brand .ava img{display:none}
+.brand .ava::after{content:"炼";color:#fff;font-size:.92rem;font-weight:800;font-family:var(--serif)}
+.brand small{color:var(--text-3);font-size:.76rem}
+.views{background:#f0f1f3;border:1px solid #e9ebee;padding:3px}
+.views button{font-size:.86rem;color:#5a5f6a;padding:6px 16px}
+.views button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 4px rgba(16,24,40,.10)}
+.views #vBtnUni{background:linear-gradient(135deg,var(--gold-1),var(--gold-2));border:1px solid var(--gold-3);color:var(--gold-4);font-weight:700}
+.views #vBtnUni.on{background:linear-gradient(135deg,#fbeec3,#f3d488);color:#8a5b00;box-shadow:0 1px 5px rgba(200,150,40,.25)}
+.stat{border-color:#e9ebee}
+.xpmini{width:84px;height:6px;background:#f0e9d8}
+.icon-btn{width:30px;height:30px;border-color:#e6e8eb;color:#8a8f99}
+.acc .u{width:28px;height:28px}
+/* --- 首页布局：display:contents + flex order，让静态「五步炼知法」插在 hero 与书架之间 --- */
+main{display:flex;flex-direction:column}
+#view-home:not(.on){display:none}
+#view-home.on{display:contents;animation:none}
+.hero-band{order:0}
+.home-steps{order:1}
+#view-home.on>*:not(.hero-band){order:2}
+/* --- Hero 区（结构由 app.js 渲染，仅重绘样式） --- */
+.hero-band{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 30px rgba(16,24,40,.05);padding:38px 38px 32px;margin-bottom:18px}
+.hero-band .big{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.25rem);font-weight:800;color:var(--ink);line-height:1.45;letter-spacing:.01em}
+.hero-band .big .blue{color:var(--blue);background:linear-gradient(180deg,transparent 60%,rgba(15,136,235,.16) 60%);padding:0 2px}
+.hero-band .sub{color:#4b4b4b;font-size:.96rem;line-height:1.95;margin-top:14px;max-width:62em}
+.hero-band .sub b{color:#3a3a3a;font-weight:600}
+.hero-band img.herofox{display:none}
+.hero-band .searchbox{min-width:280px;max-width:360px;padding:10px 18px;border-color:#d9dce1;background:#fff}
+.hero-band .searchbox input{font-size:.93rem}
+.hero-band .btn{border-radius:999px;padding:11px 24px;font-size:.94rem}
+.hero-band .btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.hero-band .btn.primary:hover{background:#333;border-color:#333;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.16)}
+.hero-band #hbUni{background:#fffdf4;border-color:var(--gold-3);color:var(--gold-4)}
+.hero-band #hbUni:hover{border-color:var(--gold-4);color:#8a5b00;box-shadow:0 8px 20px rgba(200,150,40,.14)}
+#view-home .helpline{background:transparent;padding:2px 4px;color:var(--text-3)}
+/* --- 书架 / 题卡 / 挑选栏微调 --- */
+.tcard{border-color:#e9ebee}
+.tcard:hover{box-shadow:0 12px 26px rgba(16,24,40,.09)}
+.shelf-head .h-ico{border-radius:12px}
+.pick-bar{border-radius:18px}
+/* --- 五步炼知法（静态区块，仅首页显示） --- */
+.home-steps{display:none;margin:2px 0 26px}
+main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
+.hs-head{display:flex;align-items:baseline;gap:12px;margin:0 2px 14px;flex-wrap:wrap}
+.hs-head h2{font-size:1.18rem;font-weight:800;color:var(--ink)}
+.hs-head span{color:var(--text-3);font-size:.86rem}
+.hs-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.hs-card{background:#fff;border:1px solid #e9ebee;border-radius:16px;padding:18px 16px 16px;position:relative;box-shadow:0 1px 2px rgba(16,24,40,.03);transition:.22s}
+.hs-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(16,24,40,.08);border-color:#dfe3e8}
+.hs-card .hs-ico{width:38px;height:38px;border-radius:11px;background:var(--blue-soft);display:grid;place-items:center;color:var(--blue)}
+.hs-card .hs-ico svg{width:20px;height:20px}
+.hs-card .hs-num{position:absolute;top:16px;right:16px;font-family:var(--serif);color:#c9cdd4;font-size:.95rem}
+.hs-card b{display:block;font-size:1rem;color:var(--ink);margin:14px 0 4px}
+.hs-card p{font-size:.82rem;color:var(--text-3);line-height:1.7}
+@media(max-width:1080px){.hs-row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.hs-row{grid-template-columns:repeat(2,1fr)}.hs-card .hs-num{display:none}.hero-band{padding:26px 20px 22px}}
+@media(max-width:460px){.hs-row{grid-template-columns:1fr}}
+/* 窄屏：顶栏允许折行，避免状态区被挤出视口 */
+@media(max-width:520px){
+  .bar{height:auto;padding:8px 12px;flex-wrap:wrap;row-gap:6px}
+  .statwrap{margin-left:0;flex-wrap:wrap;row-gap:6px}
+  main{padding-top:108px}
+}
+/* ================================================================
+   知乎式方角：卡片 / 按钮 / 控件统一小方角（4px，知乎接近直角的克制圆角）
+   ================================================================ */
+:root{--r:4px}
+.brand .ava{border-radius:4px}
+.views,.views button{border-radius:4px}
+.stat,.icon-btn,.acc .u{border-radius:4px}
+.hero-band{border-radius:4px}
+.hero-band .searchbox,.hero-band .btn,.searchbox{border-radius:4px}
+.hs-card,.hs-card .hs-ico{border-radius:4px}
+.tcard,.addcard{border-radius:4px}
+.shelf-head .h-ico{border-radius:4px}
+.pick-bar,.custom-panel{border-radius:4px}
+.tag,.btn{border-radius:4px}
 </style>
 </head>
 <body>
@@ -616,8 +739,8 @@ mark.ur-note::after{content:"📝";font-size:.62em;margin-left:1px;vertical-alig
     <div class="brand"><span class="ava"><img src="assets/idle.gif" alt="待机看山"></span>炼知 ReKnow<small>把收藏炼成<b>回答</b></small></div>
     <div class="views" style="margin-left:4px">
       <button id="vBtnHome" class="on">📚 收藏与选题</button>
-      <button id="vBtnMind">🧠 思维图谱</button>
-      <button id="vBtnLib">🧰 知识库</button>
+      
+      
       <button id="vBtnUni" title="沉浸式 3D：你的收藏就是一片知识星海">🌌 炼金宇宙</button>
     </div>
     <div class="statwrap">
@@ -626,13 +749,40 @@ mark.ur-note::after{content:"📝";font-size:.62em;margin-left:1px;vertical-alig
       <button class="icon-btn" id="btnSnd" title="音效开关">🔊</button>
       <button class="icon-btn" id="btnHelp" title="新手引导">？</button>
       <button class="icon-btn" id="btnReset" title="清空进度">↺</button>
-      <span class="acc"><span class="u">许</span>小许 · 知乎已连接<span class="ok">在线</span></span>
+      <span class="acc"><span class="u">许</span>小许 · <span class="ok">在线</span></span>
     </div>
   </div>
 </header>
 
 <main>
   <section id="view-home" class="view on"></section>
+
+  <!-- 五步炼知法（静态展示区块 · 仅首页激活时显示） -->
+  <section class="home-steps" aria-label="五步炼知法">
+    <div class="hs-head"><h2>五步炼知法</h2><span>每篇收藏都走这条路，学完就算真正掌握</span></div>
+    <div class="hs-row">
+      <div class="hs-card">
+        <span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M2 9h20"/><path d="M9 3l3 6 3-6"/><path d="M12 9v13"/></svg></span>
+        <span class="hs-num">壹</span><b>选料</b><p>从收藏夹挑一篇值得学的好回答</p>
+      </div>
+      <div class="hs-card">
+        <span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="M2 13l10 5 10-5"/></svg></span>
+        <span class="hs-num">贰</span><b>拆解</b><p>拆成知识点卡片，逐条读懂</p>
+      </div>
+      <div class="hs-card">
+        <span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/><path d="M22 9v5"/></svg></span>
+        <span class="hs-num">叁</span><b>学懂</b><p>闯关 / 快答 / 听讲 / 与 AI 开杠</p>
+      </div>
+      <div class="hs-card">
+        <span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4"/><path d="M15.4 6.5l-6.8 4"/></svg></span>
+        <span class="hs-num">肆</span><b>图谱</b><p>把理解结成自己的思维图谱</p>
+      </div>
+      <div class="hs-card">
+        <span class="hs-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></span>
+        <span class="hs-num">伍</span><b>回流</b><p>写成回答发回知乎，完成闭环</p>
+      </div>
+    </div>
+  </section>
   <section id="view-flow" class="view">
     <div class="flow-head">
       <div class="fh-row1"><button class="backlink" id="flowBack">← 回收藏夹</button><div class="topic-chip tc" id="flowTopic"></div></div>
@@ -647,20 +797,7 @@ mark.ur-note::after{content:"📝";font-size:.62em;margin-left:1px;vertical-alig
     </div>
     <div id="flowBody"></div>
   </section>
-  <section id="view-mind" class="view">
-    <div class="flow-head">
-      <div class="fh-row1"><button class="backlink" id="mindBack">← 回收藏夹</button><h2 style="font-size:1.15rem">🧠 思维图谱 <span class="dim" style="font-size:.8rem;font-weight:400">你的学习，长成一张图</span></h2></div>
-      <div class="helpline" id="mindHelp"></div>
-    </div>
-    <div id="mindBody"></div>
-  </section>
-  <section id="view-lib" class="view">
-    <div class="flow-head">
-      <div class="fh-row1"><button class="backlink" id="libBack">← 回收藏夹</button><h2 style="font-size:1.15rem">🧰 我的知识库 <span class="dim" style="font-size:.8rem;font-weight:400">词条 · 语录 · 心得，都在这里</span></h2></div>
-      <div class="helpline" id="libHelp"></div>
-    </div>
-    <div id="libBody"></div>
-  </section>
+
 </main>
 
 <footer class="appfoot">炼知 ReKnow v6 · 炼金宇宙版 · 知乎黑客松 2026「知识炼金场」赛道 · <a href="策划书.html" target="_blank">项目策划书</a> · <a href="使用指南.html" target="_blank">用户使用指南</a> · 看山形象仅赛事用途</footer>

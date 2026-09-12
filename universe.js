@@ -30,6 +30,11 @@
     var d = DEMO();
     return (d.topics || []).concat(d.custom || []);
   }
+  /* 修改版：只有"已标注为习得"的文章才进入炼金宇宙（口径 S.learned ∪ S.records） */
+  function uniLearnableTopics() {
+    var s = S() || {}, L = s.learned || {}, R = s.records || {};
+    return allTopics().filter(function (t) { return !!(L[t.id] || R[t.id]); });
+  }
   function topicById(id) {
     var list = allTopics();
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
@@ -326,7 +331,7 @@
 
   /* ---------- 布局：围绕中央炼金炉的「轨道星带」 ---------- */
   function graphLayout() {
-    var ts = allTopics();
+    var ts = uniLearnableTopics();
     var list = [];
     for (var i = 0; i < ts.length; i++) {
       var t = ts[i];
@@ -602,7 +607,7 @@
     }
     edges = [];
     var byIdMap = {}; for (var s = 0; s < stars.length; s++) byIdMap[stars[s].id] = stars[s];
-    var pairs = {}, arr = allTopics();
+    var pairs = {}, arr = uniLearnableTopics();
     for (var t = 0; t < arr.length; t++) {
       var lks = arr[t].links || [];
       for (var l = 0; l < lks.length; l++) {
@@ -1090,7 +1095,7 @@
       '<div class="uc-head"><span class="uc-ico" style="background:' + col + '">' + (t.custom ? '🧪' : th.icon) + '</span><div class="uc-q">' + esc(t.q) + '</div></div>' +
       '<div class="uc-meta"><span class="tg" style="color:' + col + ';border-color:' + col + '55">' + esc(th.name) + '</span><span class="tg">' + esc(t.author || '') + '</span><span class="tg">▲ ' + fmtV(t.votes) + '</span>' + (learned ? '<span class="tg" style="background:rgba(31,161,95,.2);color:#5ad999">✓ 已学懂</span>' : '') + '</div>' +
       '<div class="uc-core">🎯 ' + esc(t.core || '') + '</div>' +
-      '<div class="uc-acts"><button class="b1 learn" id="ucLearn">' + (learned ? '♻️ 再炼一遍' : '⛏ 开始学这篇') + '</button><button class="b1 read" id="ucRead">📖 看原文 · 圈点</button></div>';
+      '<div class="uc-acts"><button class="b1 learn" id="ucLearn">' + (learned ? '♻️ 再炼一遍' : '⛏ 开始学这篇') + '</button><button class="b1 read" id="ucRead">📖 看原文 · 圈点</button><button class="b1 mind" id="ucMind">🧠 绘制思维导图</button></div>';
     card.classList.add('on');
     byId('ucClose').addEventListener('click', function () { closeCard(); selId = null; });
     byId('ucLearn').addEventListener('click', function () {
@@ -1099,6 +1104,7 @@
       else if (window.showView) window.showView('flow');
     });
     byId('ucRead').addEventListener('click', function () { rdOpen(id); });
+    var _ucm = byId('ucMind'); if (_ucm) _ucm.addEventListener('click', function () { openUniMind(id); });
     foxSay('<b>🦊 看山：</b>' + (learned ? '这颗你已经炼过啦，再点「开始学」可以二刷巩固～' : '选它没错，点「开始学」，我把炉火给你点上 🔥'), 5200);
     uniSfx('pick');
     // 高亮匹配星体
@@ -1503,6 +1509,253 @@
   U.diag = function () {
     return { ready: ready, ok: ok, active: active, stars: stars.length, edges: edges.length, weather: curWeather || null, hasThree: !!window.THREE };
   };
+
+/* ============================================================
+   v7 · 宇宙侧整合模块（IIFE 内部，末尾）
+   1) 星体只放"已标注为习得"的文章（配合 graphLayout / buildEdges 的改动）
+   2) 新增「📚 已习得」面板：整合原「思维图谱」与「知识库」的全部内容
+   3) 每篇已习得文章附带「🧠 绘制思维导图」小工具（复用 app.js 的完整 DIY 编辑器）
+   ============================================================ */
+
+  /* ---------- 已习得清单（与 graphLayout 同一口径） ---------- */
+
+  /* ---------- 思维导图覆盖层 ---------- */
+  function ensureMindOverlay() {
+    if (byId('uniMind')) return;
+    var ov = document.createElement('div');
+    ov.className = 'uni-mind';
+    ov.id = 'uniMind';
+    ov.innerHTML =
+      '<div class="um-box">' +
+      '<div class="um-head"><b>🧠 绘制思维导图</b><span id="umTitle"></span>' +
+      '<button class="x" id="umClose">✕ 收起</button></div>' +
+      '<div class="um-body" id="umHost"></div></div>';
+    document.body.appendChild(ov);
+    byId('umClose').addEventListener('click', closeUniMind);
+  }
+  function openUniMind(id) {
+    var t = topicById(id); if (!t) return;
+    if (!(window.S && window.S.records && window.S.records[id])) {
+      toastU('这篇还没有学完 —— 学完才会有图谱可以画哦', 0); return;
+    }
+    if (!window.renderMindMap || !window.bindMindMap) { toastU('编辑器未就绪', 0); return; }
+    ensureMindOverlay();
+    /* 关键：学习流程页里可能还留着第 4 步的编辑器 DOM，先清掉，
+       否则 #mmSvg / #mmZoom / .mm-node 等选择器会撞到那边去 */
+    var fb = document.getElementById('flowBody'); if (fb) fb.innerHTML = '';
+    byId('umTitle').textContent = t.q;
+    byId('uniMind').classList.add('on');
+    var host = byId('umHost');
+    host.innerHTML = window.renderMindMap(t, 'umHost');
+    window.bindMindMap(t, 'umHost');
+    uniSfx('open');
+  }
+  function closeUniMind() {
+    var ov = byId('uniMind'); if (ov) ov.classList.remove('on');
+    uniSfx('close');
+  }
+
+  /* ---------- 「📚 已习得」面板 ---------- */
+  function ensureKnowPanel() {
+    if (byId('uniKnowPanel')) return;
+    var shell = byId('uniShell'); if (!shell) return;
+    var hud = shell.querySelector('.uni-hud') || shell;
+    var btn = document.createElement('button');
+    btn.className = 'uni-btn';
+    btn.id = 'uniKnowBtn';
+    btn.title = '只收录已标注为习得的文章 · 整合思维图谱 + 知识库';
+    btn.innerHTML = '📚 已习得';
+    var hotBtn = byId('uniHotBtn');
+    if (hotBtn && hotBtn.parentNode) hotBtn.parentNode.insertBefore(btn, hotBtn);
+    else (shell.querySelector('.uni-actions') || hud).appendChild(btn);
+
+    var panel = document.createElement('div');
+    panel.className = 'uni-panel';
+    panel.id = 'uniKnowPanel';
+    panel.innerHTML =
+      '<div class="up-head"><b>📚 已习得知识</b><span class="src" id="uniKnowSrc"></span>' +
+      '<button class="x" id="uniKnowClose" title="收起">✕</button></div>' +
+      '<div class="uni-hot" id="uniKnowList"></div>';
+    hud.appendChild(panel);
+
+    btn.addEventListener('click', function () {
+      if (byId('uniKnowPanel').classList.contains('on')) { hideKnow(); return; }
+      paintKnow(); showKnow();
+    });
+    byId('uniKnowClose').addEventListener('click', hideKnow);
+  }
+  function showKnow() { hideHot(); closeCard(); byId('uniKnowPanel').classList.add('on'); }
+  function hideKnow() { var p = byId('uniKnowPanel'); if (p) p.classList.remove('on'); }
+
+  function paintKnow() {
+    var list = byId('uniKnowList'); if (!list) return;
+    var ts = uniLearnableTopics();
+    var src = byId('uniKnowSrc');
+    if (src) src.textContent = ts.length ? (ts.length + ' 篇已习得') : '还没有已习得';
+    if (!ts.length) {
+      list.innerHTML = '<div class="u-empty">炼金宇宙现在还是空的 ✨<br><br>' +
+        '去「📚 收藏与选题」学完一篇：它就会作为一颗星出现在星海里，' +
+        '并且自带一个「🧠 绘制思维导图」小工具；<br>' +
+        '原「思维图谱」「知识库」的内容也都并到了这里。</div>';
+      return;
+    }
+    var ls = {}; ts.forEach(function (t) { ls[t.id] = 1; });
+    var pairs = window.crossPairs ? window.crossPairs() : [];
+    var h = '';
+    h += '<div class="uk-stat"><div><b>' + ts.length + '</b><span>已习得</span></div>' +
+      '<div><b>' + pairs.length + '</b><span>共同概念</span></div>' +
+      '<div><b>' + (window.levelInfo ? window.levelInfo().lv.name : '—') + '</b><span>段位 🔥</span></div></div>';
+    h += '<div class="uk-sec">🗂 星海里的文章（只收录已习得）</div>';
+    ts.forEach(function (t) {
+      var th = themeOf(t.cat), col = t.custom ? '#9aa4b2' : th.color;
+      var mm = window.mmState ? window.mmState(t) : null;
+      var n = mm ? Object.keys(mm.nodes).length : 0;
+      h += '<div class="uk-item">' +
+        '<div class="uk-q"><span class="uk-ico" style="background:' + col + '">' + (t.custom ? '🧪' : th.icon) + '</span>' + esc(t.q) + '</div>' +
+        '<div class="uk-meta"><span class="tg" style="color:' + col + ';border-color:' + col + '55">' + esc(th.name) + '</span>' +
+        '<span class="tg">🕸 ' + n + ' 节点</span></div>' +
+        '<div class="uk-acts">' +
+        '<button class="uk-b" data-kfocus="' + t.id + '">🎯 定位</button>' +
+        '<button class="uk-b gold" data-kmind="' + t.id + '">🧠 绘制思维导图</button>' +
+        '<button class="uk-b" data-kread="' + t.id + '">📖 原文</button>' +
+        '</div></div>';
+    });
+    if (pairs.length) {
+      h += '<div class="uk-sec">🧬 交叉分析（原思维图谱内容）</div>';
+      pairs.forEach(function (p) {
+        h += '<div class="uk-cross">「<b>' + esc(trimCJK(p.a.q, 14)) + '</b>」×「<b>' + esc(trimCJK(p.b.q, 14)) +
+          '</b>」都讲到了 <b style="color:#e6a23c">' + esc(p.shared.join('、')) + '</b></div>';
+      });
+      if (window.styleInsight) h += '<div class="uk-insight"><b>🔎 学习风格：</b>' + window.styleInsight() + '</div>';
+    }
+    h += '<div class="uk-sec">🧰 知识库（词条只列已习得）</div>';
+    var libs = S().libs || [];
+    libs.forEach(function (l) {
+      var kept = (l.entries || []).filter(function (id) { return ls[id] && topicById(id); });
+      var hidden = (l.entries || []).length - kept.length;
+      h += '<div class="uk-lib" style="border-color:' + (l.color || '#888') + '55">' +
+        '<div class="uk-libhead"><span class="li" style="background:' + (l.color || '#888') + '">' + l.icon + '</span>' +
+        '<b>' + esc(l.name) + '</b><span class="dim">' + esc(l.type || '') + ' · 已习得 ' + kept.length +
+        (hidden > 0 ? '（另隐藏 ' + hidden + ' 条未习得）' : '') + '</span></div>';
+      kept.forEach(function (id) {
+        var t = topicById(id);
+        h += '<div class="uk-entry"><span>' + (t.custom ? '🧪' : themeOf(t.cat).icon) + '</span>' +
+          '<span class="q">' + esc(trimCJK(t.q, 20)) + '</span>' +
+          '<span class="uk-x" data-krm="' + id + '" data-klib="' + l.id + '" title="从该库移除">✕</span></div>';
+      });
+      if (!kept.length) h += '<div class="uk-empty2">这个库还没有已习得的词条</div>';
+      (l.notes || []).forEach(function (nt) {
+        h += '<div class="uk-note"><span>' + esc(nt.text) + '</span><span class="tm">' + esc(nt.tm || '') + '</span>' +
+          '<span class="uk-x" data-knrm="' + nt.id + '" data-klib="' + l.id + '" title="删除">✕</span></div>';
+      });
+      h += '<div class="uk-noteadd"><input class="uk-in" data-knote="' + l.id + '" placeholder="记一句语录 / 心得…">' +
+        '<button class="uk-b" data-kaddnote="' + l.id + '">记一条</button></div>';
+      h += '</div>';
+    });
+    h += '<div class="uk-newlib"><input class="uk-in" id="ukLibName" placeholder="新知识库名称">' +
+      '<input class="uk-in" id="ukLibType" placeholder="类型（可空）">' +
+      '<button class="uk-b gold" id="ukLibCreate">＋ 新建知识库</button></div>';
+    list.innerHTML = h;
+    bindKnow();
+  }
+
+  function bindKnow() {
+    var box = byId('uniKnowList'); if (!box) return;
+    function on(sel, fn) { Array.prototype.forEach.call(box.querySelectorAll(sel), fn); }
+    on('[data-kfocus]', function (el) {
+      el.addEventListener('click', function () { hideKnow(); selectStar(el.getAttribute('data-kfocus'), true); });
+    });
+    on('[data-kmind]', function (el) {
+      el.addEventListener('click', function () { openUniMind(el.getAttribute('data-kmind')); });
+    });
+    on('[data-kread]', function (el) {
+      el.addEventListener('click', function () { hideKnow(); rdOpen(el.getAttribute('data-kread')); });
+    });
+    on('[data-krm]', function (el) {
+      el.addEventListener('click', function () {
+        var id = el.getAttribute('data-krm'), lid = el.getAttribute('data-klib');
+        var lib = (S().libs || []).filter(function (x) { return x.id === lid; })[0];
+        if (!lib) return;
+        lib.entries = (lib.entries || []).filter(function (x) { return x !== id; });
+        if (window.save) window.save();
+        paintKnow(); uniSfx('note');
+      });
+    });
+    on('[data-knrm]', function (el) {
+      el.addEventListener('click', function () {
+        var nid = el.getAttribute('data-knrm'), lid = el.getAttribute('data-klib');
+        var lib = (S().libs || []).filter(function (x) { return x.id === lid; })[0];
+        if (!lib) return;
+        lib.notes = (lib.notes || []).filter(function (x) { return x.id !== nid; });
+        if (window.save) window.save();
+        paintKnow();
+      });
+    });
+    on('[data-kaddnote]', function (el) {
+      el.addEventListener('click', function () {
+        var lid = el.getAttribute('data-kaddnote');
+        var inp = box.querySelector('[data-knote="' + lid + '"]');
+        var v = ((inp && inp.value) || '').trim();
+        if (!v) { toastU('先写一句再记', 0); return; }
+        var lib = (S().libs || []).filter(function (x) { return x.id === lid; })[0];
+        if (!lib) return;
+        lib.notes = lib.notes || [];
+        lib.notes.push({ id: 'n' + (Date.now() + Math.random()), text: v, tm: new Date().toLocaleDateString('zh-CN') });
+        if (window.save) window.save();
+        uniSfx('note'); toastU('已记下', 1); paintKnow();
+      });
+    });
+    var crt = box.querySelector('#ukLibCreate');
+    if (crt) crt.addEventListener('click', function () {
+      var nm = ((box.querySelector('#ukLibName') || {}).value || '').trim();
+      var tp = ((box.querySelector('#ukLibType') || {}).value || '').trim() || '综合';
+      if (!nm) { toastU('给知识库起个名字', 0); return; }
+      var ICONS = ['🧰', '📚', '💼', '💻', '✍️', '🎨', '🧠', '📒'];
+      S().libs = S().libs || [];
+      S().libs.push({
+        id: 'lib' + (Date.now()), name: nm, type: tp,
+        icon: ICONS[S().libs.length % ICONS.length],
+        color: ['#e6862e', '#0f88eb', '#1fa15f', '#e05a8a', '#5b6ef5'][S().libs.length % 5],
+        entries: [], notes: []
+      });
+      if (window.save) window.save();
+      uniSfx('win'); toastU('知识库「' + nm + '」已创建', 1); paintKnow();
+    });
+  }
+
+  /* ---------- 暴露与钩子 ---------- */
+  U.learnableTopics = uniLearnableTopics;
+  U.paintKnow = paintKnow;
+  U.openMind = openUniMind;
+  U.closeMind = closeUniMind;
+  /* 诊断钩子：直接返回"这一轮会在星海里出现哪些文章"（与 rebuildTopics 用同一份布局结果） */
+  U.starPlan = function () {
+    return graphLayout().list.map(function (it) { return it.id; });
+  };
+
+  /* 面板/覆盖层注入 + 每次进入宇宙刷新一次 */
+  function bootKnow() {
+    try { ensureKnowPanel(); ensureMindOverlay(); } catch (e) { }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootKnow);
+  else bootKnow();
+
+  var __enterBase = U.enter;
+  U.enter = function () {
+    __enterBase.apply(null, arguments);
+    try { bootKnow(); if (byId('uniKnowPanel')) paintKnow(); } catch (e) { }
+    /* 星海为空时给一句引导：3D 里一颗星都没有，容易被误认为"坏了" */
+    try {
+      if (stars.length === 0) {
+        byId('uniHints').innerHTML = '🌌 <b>星海还是空的</b> ✨ 去「📚 收藏与选题」学完一篇（走完 拆解 → 学懂 → 回流 存进成果），它就会作为一颗星出现在这里，并自带「🧠 绘制思维导图」小工具';
+      }
+    } catch (e) { }
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var m = byId('uniMind');
+    if (m && m.classList.contains('on')) { closeUniMind(); }
+  });
 
   // 自动初始化（延迟，等 THREE 就绪由 boot 调用；这里只兜底）
   if (window.THREE) { setTimeout(function () { U.init(); }, 60); }
