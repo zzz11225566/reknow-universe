@@ -1,0 +1,561 @@
+/* 炼知 ReKnow v6 - 精简版样式 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #2c3e50;
+    line-height: 1.6;
+}
+
+/* 顶部导航 */
+.header {
+    background: white;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: 600;
+    color: #5b6ef5;
+}
+
+.search-bar {
+    flex: 1;
+    max-width: 400px;
+    margin: 0 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 20px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #5b6ef5;
+    box-shadow: 0 2px 8px rgba(91,110,245,0.1);
+}
+
+.stats {
+    display: flex;
+    gap: 8px;
+}
+
+.stat-item {
+    font-size: 14px;
+    color: #6c757d;
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-item.learned {
+    color: #28a745;
+    background: #f0fff4;
+}
+
+/* 主容器 */
+.main-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+/* 随机推荐 */
+.random-recommend {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.recommend-text {
+    font-size: 16px;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shuffle-button {
+    background: #5b6ef5;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.shuffle-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(91,110,245,0.2);
+}
+
+/* 收藏卡片 */
+.collection-section {
+    margin-bottom: 40px;
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.collection-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.collection-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    border-left: 4px solid #e9ecef;
+}
+
+.collection-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    border-left-color: #5b6ef5;
+}
+
+.collection-card.learned {
+    border-left-color: #28a745;
+}
+
+.card-header {
+    margin-bottom: 12px;
+}
+
+.question-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.card-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: #6c757d;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    padding: 2px 6px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.card-content {
+    margin-bottom: 16px;
+}
+
+.core-insight {
+    background: #f0f7ff;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #5b6ef5;
+    line-height: 1.5;
+}
+
+.learning-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.status-learned {
+    color: #28a745;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-unlearned {
+    color: #ffc107;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.start-button {
+    background: linear-gradient(135deg, #5b6ef5 0%, #7c8ff9 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.start-button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(91,110,245,0.3);
+}
+
+.start-button:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 拆解和学习界面 */
+.quick-decompose, .quick-learning {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 40px;
+}
+
+.decompose-header, .learning-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.decompose-title, .learning-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.back-button {
+    background: #e9ecef;
+    color: #2c3e50;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.back-button:hover {
+    background: #dee2e6;
+}
+
+.quick-mark-all {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 24px;
+}
+
+.quick-mark-all:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.knowledge-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.knowledge-card {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s;
+}
+
+.knowledge-card.all-marked {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+
+.card-type {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.type-concept { background: #5b6ef5; color: white; }
+.type-method { background: #e8923c; color: white; }
+.type-principle { background: #16a05d; color: white; }
+.type-example { background: #e05a8a; color: white; }
+.type-tip { background: #ffc107; color: white; }
+
+.card-content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #2c3e50;
+}
+
+.card-source {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 8px;
+}
+
+/* 测试界面 */
+.quiz-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.progress-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+    max-width: 200px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #5b6ef5 0%, #7c8ff9 100%);
+    width: 33%;
+    transition: width 0.3s;
+}
+
+.quiz-question {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #2c3e50;
+}
+
+.quiz-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.quiz-option {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.quiz-option:hover {
+    border-color: #5b6ef5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(91,110,245,0.1);
+}
+
+.quiz-option.correct {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+
+.quiz-option.wrong {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+.quiz-option.selected {
+    pointer-events: none;
+}
+
+/* 成就弹窗 */
+.achievement-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: white;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-width: 400px;
+    text-align: center;
+    transition: transform 0.3s;
+}
+
+.achievement-popup.show {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.achievement-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.achievement-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+.achievement-desc {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 24px;
+}
+
+.continue-button {
+    background: #5b6ef5;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.continue-button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(91,110,245,0.3);
+}
+
+/* 右下角组件 */
+.kanshan-corner {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.2s;
+}
+
+.kanshan-corner:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.universe-corner {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+    opacity: 0.8;
+}
+
+.universe-corner:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(26,26,46,0.4);
+}
+
+/* 动画 */
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.4s forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.highlight {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba(91,110,245,0.3);
+    animation: highlight 2s forwards;
+}
+
+@keyframes highlight {
+    to {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "name": "recknow-v6-simplified",
+    "version": "6.6.0",
+    "description": "炼知 ReKnow v6 · 精简版 - 专注收藏管理和快速学习",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js",
+        "demo": "node server.js"
+    },
+    "keywords": ["学习", "知识管理", "炼知", "知乎", "AI学习助手"],
+    "author": "炼知团队",
+    "license": "MIT",
+    "engines": {
+        "node": ">=14"
+    },
+    "type": "commonjs"
+}

@@ -20,6 +20,10 @@ data/*.db
 *.log
 logs/
 
+# 预览服务痕迹
+*.pid
+_preview_server.*
+
 # 系统与编辑器
 .DS_Store
 Thumbs.db
@@ -29,3 +33,7 @@ Thumbs.db
 # 临时文件
 tmp/
 temp/
+
+# 工作区归档与进行中草稿（不入库）
+archive/
+_draft_uni_*.html

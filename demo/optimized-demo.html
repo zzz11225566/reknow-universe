@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炼知 ReKnow v6 · 快速学习体验</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        /* 顶部导航 - 精简版 */
+        .header {
+            background: white;
+            padding: 16px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #5b6ef5;
+        }
+        
+        .nav-items {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .nav-item {
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .nav-item:hover {
+            background: #f8f9fa;
+            transform: translateY(-1px);
+        }
+        
+        .nav-item.active {
+            background: #5b6ef5;
+            color: white;
+        }
+        
+        /* 今日推荐 - 主界面 */
+        .main-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .recommendation-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .today-indicator {
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        
+        /* 推荐卡片 */
+        .recommendation-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        
+        .topic-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .topic-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        
+        .topic-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .topic-info {
+            flex: 1;
+        }
+        
+        .topic-question {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .topic-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+        
+        .topic-time {
+            padding: 2px 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .topic-core {
+            background: #f0f7ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #5b6ef5;
+        }
+        
+        .learning-time {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: #28a745;
+            margin-bottom: 16px;
+        }
+        
+        .start-button {
+            background: linear-gradient(135deg, #5b6ef5 0%, #7c8ff9 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(91,110,245,0.4);
+        }
+        
+        /* 快速拆解界面 */
+        .quick-decompose {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            margin-bottom: 40px;
+            display: none;
+        }
+        
+        .decompose-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .decompose-title {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        
+        .quick-mark-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-mark-button:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        
+        .knowledge-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .knowledge-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .knowledge-card.marked {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .knowledge-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .card-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .type-concept { background: #5b6ef5; color: white; }
+        .type-method { background: #e8923c; color: white; }
+        .type-principle { background: #16a05d; color: white; }
+        .type-example { background: #e05a8a; color: white; }
+        
+        .card-content {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #2c3e50;
+        }
+        
+        .card-source {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+        
+        /* 快速学习界面 */
+        .quick-learning {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            margin-bottom: 40px;
+            display: none;
+        }
+        
+        .quiz-progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 0 16px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5b6ef5 0%, #7c8ff9 100%);
+            width: 33%;
+            transition: width 0.3s;
+        }
+        
+        .timer {
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .quiz-content {
+            margin-bottom: 32px;
+        }
+        
+        .quiz-question {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .quiz-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .quiz-option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .quiz-option:hover {
+            border-color: #5b6ef5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(91,110,245,0.1);
+        }
+        
+        .quiz-option.correct {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .quiz-option.wrong {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        /* 成就展示 */
+        .achievement-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 400px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .achievement-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .achievement-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .achievement-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .achievement-desc {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 24px;
+        }
+        
+        .achievement-button {
+            background: #5b6ef5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* 右下角看山 */
+        .kanshan-corner {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s;
+        }
+        
+        .kanshan-corner:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        /* 右下角宇宙入口 */
+        .universe-corner {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
+            opacity: 0.8;
+        }
+        
+        .universe-corner:hover {
+        opacity: 1;
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(26,26,46,0.4);
+        }
+        
+        /* 今日进度 */
+        .daily-progress {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+        
+        .progress-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .progress-stats {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #5b6ef5;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">🔥 炼知 ReKnow</div>
+            <div class="nav-items">
+                <div class="nav-item active">今日学习</div>
+                <div class="nav-item">我的成就</div>
+                <div class="nav-item">设置</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 今日进度 -->
+    <div class="daily-progress">
+        <div class="progress-title">今日进度</div>
+        <div class="progress-stats">
+            <div class="stat-item">
+                <div class="stat-value">2</div>
+                <div class="stat-label">已学懂</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">5</div>
+                <div class="stat-label">目标篇</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">8</div>
+                <div class="stat-label">连续天数</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 今日推荐 -->
+        <div class="recommendation-section">
+            <div class="section-title">
+                <span>🎯 今日推荐学习</span>
+                <span class="today-indicator">NEW</span>
+            </div>
+            
+            <div class="recommendation-cards">
+                <!-- 推荐卡片 1 -->
+                <div class="topic-card" onclick="showDecompose()">
+                    <div class="topic-header">
+                        <div class="topic-info">
+                            <div class="topic-question">费曼学习法真的有用吗？我用它三个月背完考研专业课</div>
+                            <div class="topic-meta">
+                                <span class="topic-time">收藏于 3 天前</span>
+                                <span>👁️ 8.4K 热度</span>
+                                <span>👤 李思考</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-core">
+                        💡 核心：能不用术语、把一件事讲给外行听，才算真的会。
+                    </div>
+                    <div class="learning-time">
+                        ⏱️ 预计学习时间：5 分钟
+                    </div>
+                    <div class="start-button">
+                        ⛏ 开始学习这篇
+                    </div>
+                </div>
+                
+                <!-- 推荐卡片 2 -->
+                <div class="topic-card">
+                    <div class="topic-header">
+                        <div class="topic-info">
+                            <div class="topic-question">如何克服拖延症？从心理学角度谈解决方案</div>
+                            <div class="topic-meta">
+                                <span class="topic-time">收藏于 1 天前</span>
+                                <span>👁️ 6.2K 热度</span>
+                                <span>👤 心理学小王</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-core">
+                        💡 核心：拖延不是懒，是对任务的情感反应失调。
+                    </div>
+                    <div class="learning-time">
+                        ⏱️ 预计学习时间：6 分钟
+                    </div>
+                    <div class="start-button">
+                        ⛏ 开始学习这篇
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快速拆解界面 -->
+        <div class="quick-decompose" id="decompose-view">
+            <div class="decompose-header">
+                <div class="decompose-title">🔍 快速拆解 - 费曼学习法</div>
+                <div class="quick-mark-button" onclick="markAllCards()">
+                    ✅ 一键全懂
+                </div>
+            </div>
+            
+            <div class="knowledge-cards">
+                <div class="knowledge-card" onclick="toggleCard(this)">
+                    <div class="card-type type-concept">概念</div>
+                    <div class="card-content">费曼技巧的核心：用「教别人」来检验「自己懂没懂」。</div>
+                    <div class="card-source">— 李思考</div>
+                </div>
+                
+                <div class="knowledge-card" onclick="toggleCard(this)">
+                    <div class="card-type type-method">方法</div>
+                    <div class="card-content">四步走：选概念 → 讲给 12 岁孩子 → 卡住就补课 → 换类比再讲。</div>
+                    <div class="card-source">— 李思考</div>
+                </div>
+                
+                <div class="knowledge-card marked" onclick="toggleCard(this)">
+                    <div class="card-type type-principle">原理</div>
+                    <div class="card-content">认知科学里的「测试效应」：主动回忆比反复阅读记得牢。</div>
+                    <div class="card-source">— 《Make It Stick》</div>
+                </div>
+                
+                <div class="knowledge-card" onclick="toggleCard(this)">
+                    <div class="card-type type-example">例子</div>
+                    <div class="card-content">把量子力学讲给奶奶听：如果说不明白，就是自己还没真懂。</div>
+                    <div class="card-source">— 李思考</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快速学习界面 -->
+        <div class="quick-learning" id="learning-view">
+            <div class="quiz-progress">
+                <div class="timer">⏱️ 00:18</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 33%"></div>
+                </div>
+                <div class="timer">1/3</div>
+            </div>
+            
+            <div class="quiz-content">
+                <div class="quiz-question">🤔 根据费曼学习法，检验自己是否真正理解的最好方式是什么？</div>
+                
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false)">
+                        A. 反复阅读原文直到记住所有细节
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true)">
+                        B. 用简单的语言把这个概念讲给外行听
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false)">
+                        C. 做大量的相关练习题
+                    </div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false)">
+                        D. 把所有相关的术语都背诵下来
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成就弹窗 -->
+    <div class="achievement-popup" id="achievement-popup">
+        <div class="achievement-icon">🎉</div>
+        <div class="achievement-title">学懂完成！</div>
+        <div class="achievement-desc">你已学懂「费曼学习法」，用时 4 分 32 秒，炉火值 +50</div>
+        <div class="achievement-button" onclick="closeAchievement()">继续学习下一篇</div>
+    </div>
+    
+    <!-- 右下角看山 -->
+    <div class="kanshan-corner">
+        🦊
+    </div>
+    
+    <!-- 右下角宇宙入口 -->
+    <div class="universe-corner">
+        🌌
+    </div>
+    
+    <script>
+        // 显示拆解界面
+        function showDecompose() {
+            document.getElementById('decompose-view').style.display = 'block';
+            document.querySelector('.recommendation-section').style.display = 'none';
+            
+            // 滚动到拆解界面
+            document.getElementById('decompose-view').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 切换卡片标记状态
+        function toggleCard(card) {
+            card.classList.toggle('marked');
+        }
+        
+        // 一键全懂
+        function markAllCards() {
+            const cards = document.querySelectorAll('.knowledge-card');
+            cards.forEach(card => {
+                card.classList.add('marked');
+            });
+            
+            // 延迟显示学习界面
+            setTimeout(() => {
+                showLearning();
+            }, 1000);
+        }
+        
+        // 显示学习界面
+        function showLearning() {
+            document.getElementById('learning-view').style.display = 'block';
+            document.getElementById('decompose-view').style.display = 'none';
+            
+            // 滚动到学习界面
+            document.getElementById('learning-view').scrollIntoView({ behavior: 'smooth' });
+            
+            // 开始计时
+            startTimer();
+        }
+        
+        // 计时器
+        let timerSeconds = 0;
+        function startTimer() {
+            setInterval(() => {
+                timerSeconds++;
+                const minutes = Math.floor(timerSeconds / 60);
+                const seconds = timerSeconds % 60;
+                document.querySelector('.timer').textContent = ⏱️ :;
+            }, 1000);
+        }
+        
+        // 检查答案
+        function checkAnswer(option, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            options.forEach(opt => {
+                opt.style.pointerEvents = 'none';
+            });
+            
+            if (isCorrect) {
+                option.classList.add('correct');
+                
+                // 更新进度
+                const progressFill = document.querySelector('.progress-fill');
+                progressFill.style.width = '66%';
+                
+                // 显示下一题或完成
+                setTimeout(() => {
+                    if (progressFill.style.width === '66%') {
+                        // 模拟完成所有题目
+                        progressFill.style.width = '100%';
+                        showAchievement();
+                    }
+                }, 1000);
+            } else {
+                option.classList.add('wrong');
+                // 显示提示
+                setTimeout(() => {
+                    option.style.borderColor = '#ffc107';
+                    option.style.background = '#fff3cd';
+                }, 1500);
+            }
+        }
+        
+        // 显示成就
+        function showAchievement() {
+            document.getElementById('achievement-popup').classList.add('show');
+            
+            // 更新今日进度
+            const progressStats = document.querySelector('.progress-stats');
+            progressStats.innerHTML = 
+                <div class="stat-item">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">已学懂</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">目标篇</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">连续天数</div>
+                </div>
+            ;
+        }
+        
+        // 关闭成就弹窗
+        function closeAchievement() {
+            document.getElementById('achievement-popup').classList.remove('show');
+            // 返回推荐界面
+            document.querySelector('.recommendation-section').style.display = 'block';
+            document.getElementById('learning-view').style.display = 'none';
+        }
+        
+        // 看山点击交互
+        document.querySelector('.kanshan-corner').addEventListener('click', function() {
+            this.style.transform = 'scale(1.2) rotate(360deg)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1.1)';
+            }, 300);
+        });
+        
+        // 宇宙入口点击
+        document.querySelector('.universe-corner').addEventListener('click', function() {
+            alert('🌌 炼金宇宙成就展示\n\n✨ 已点亮星球：3 颗\n🔥 炉火等级：Lv.3\n🏆 成就：连续学习 8 天\n\n完整宇宙即将上线...');
+        });
+        
+        // 模拟页面加载时的动画
+        window.addEventListener('load', function() {
+            // 推荐卡片渐入动画
+            const cards = document.querySelectorAll('.topic-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炼知 ReKnow v6 · 我的收藏</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">🔥 炼知 ReKnow</div>
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="搜索问题、答主或关键词..." id="search-input">
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <span>📚 23 篇收藏</span>
+                </div>
+                <div class="stat-item learned">
+                    <span>✨ 8 篇已学懂</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 随机推荐 -->
+        <div class="random-recommend">
+            <div class="recommend-text">
+                <span>🎲</span>
+                <span>不知道学哪个？让AI推荐一篇</span>
+            </div>
+            <button class="shuffle-button" onclick="randomRecommend()">
+                <span>🔄</span>
+                <span>随机推荐</span>
+            </button>
+        </div>
+        
+        <!-- 收藏列表 -->
+        <div class="collection-section" id="collection-view">
+            <div class="section-title">我的收藏</div>
+            
+            <div class="collection-cards" id="collection-cards">
+                <!-- 动态生成收藏卡片 -->
+            </div>
+        </div>
+        
+        <!-- 快速拆解界面 -->
+        <div class="quick-decompose" id="decompose-view" style="display: none;">
+            <div class="decompose-header">
+                <div class="decompose-title">🔍 快速拆解</div>
+                <button class="back-button" onclick="backToCollection()">
+                    ← 返回收藏
+                </button>
+            </div>
+            
+            <button class="quick-mark-all" onclick="markAllAndStartLearning()">
+                ✅ 一键全懂，开始学习
+            </button>
+            
+            <div class="knowledge-cards" id="knowledge-cards">
+                <!-- 动态生成知识卡片 -->
+            </div>
+        </div>
+        
+        <!-- 快速学习界面 -->
+        <div class="quick-learning" id="learning-view" style="display: none;">
+            <div class="learning-header">
+                <div class="learning-title">🚀 快速学习</div>
+                <button class="back-button" onclick="backToDecompose()">
+                    ← 返回拆解
+                </button>
+            </div>
+            
+            <div class="quiz-progress">
+                <div class="progress-info">
+                    <span>📖 <span id="question-num">1/3</span></span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <span>⏱️ <span id="timer">00:00</span></span>
+                </div>
+            </div>
+            
+            <div class="quiz-content">
+                <div class="quiz-question" id="quiz-question">
+                    <!-- 动态生成问题 -->
+                </div>
+                
+                <div class="quiz-options" id="quiz-options">
+                    <!-- 动态生成选项 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成就弹窗 -->
+    <div class="achievement-popup" id="achievement-popup">
+        <div class="achievement-icon">🎉</div>
+        <div class="achievement-title">学懂完成！</div>
+        <div class="achievement-desc" id="achievement-desc">
+            <!-- 动态生成描述 -->
+        </div>
+        <button class="continue-button" onclick="continueToNext()">
+            ⛏ 开始学下一篇
+        </button>
+    </div>
+    
+    <!-- 右下角看山 -->
+    <div class="kanshan-corner" onclick="kanshanClick()">
+        🦊
+    </div>
+    
+    <!-- 右下角宇宙入口 -->
+    <div class="universe-corner" onclick="showUniverse()">
+        🌌
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

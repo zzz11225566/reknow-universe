@@ -1,0 +1,40 @@
+{
+  "console": [
+    "warning: Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation",
+    "warning: Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation",
+    "error: WebSocket connection to 'ws://127.0.0.1:8787/ws' failed: Error during WebSocket handshake: net::ERR_CONNECTION_RESET"
+  ],
+  "pageErrors": [],
+  "checks": {
+    "homeHero": true,
+    "ctaStart": "⚡ 打开即学 · 3 分钟学完一篇",
+    "ctaUni": "🏆 炼金成就",
+    "hbRandomGone": true,
+    "subCopy": "打开即学，几分钟学完一篇：拆解 → 四种学习方式（闯关 / 快问快答 / 听讲 ",
+    "hOverflowDesktop": false,
+    "ctaEntersFlow": {
+      "flowOn": true,
+      "homeOn": false,
+      "topic": "📚康奈尔笔记法：一页纸，装下一本书记忆与学习"
+    },
+    "uniShellOn": "on",
+    "foxFixed": {
+      "display": "block",
+      "position": "fixed",
+      "right": "16px",
+      "bottom": "236px",
+      "rectRight": 1424,
+      "rectBottom": 664,
+      "vw": 1440,
+      "vh": 900
+    },
+    "brandTxt": "炼金成就",
+    "debateQuotesArg": {
+      "ok": true,
+      "head": "我大致同意，不过你刚说「我自己的独特理解哈哈」，会不会正好踩"
+    },
+    "mobileHero": true,
+    "mobileCta": "⚡ 打开即学 · 3 分钟学完一篇",
+    "hOverflowMobile": false
+  }
+}

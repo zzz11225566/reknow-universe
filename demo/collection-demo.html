@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炼知 ReKnow v6 · 我的收藏</title>
+    <link rel="stylesheet" href="collection-demo.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">🔥 炼知 ReKnow</div>
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="搜索问题、答主或关键词..." onkeyup="searchCollection(this.value)">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <div style="font-size: 14px; color: #6c757d; padding: 8px 16px; background: #f8f9fa; border-radius: 8px;">
+                    📚 23 篇收藏
+                </div>
+                <div style="font-size: 14px; color: #28a745; padding: 8px 16px; background: #f0fff4; border-radius: 8px;">
+                    ✨ 8 篇已学懂
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 随机推荐 -->
+        <div class="random-recommend">
+            <div class="recommend-text">
+                <span>🎲</span>
+                <span>不知道学哪个？让AI推荐一篇</span>
+            </div>
+            <button class="shuffle-button" onclick="randomRecommend()">
+                <span>🔄</span>
+                <span>随机推荐</span>
+            </button>
+        </div>
+        
+        <!-- 收藏列表 -->
+        <div class="collection-section" id="collection-view">
+            <div class="section-title">我的收藏</div>
+            
+            <div class="collection-cards" id="collection-cards">
+                <!-- 收藏卡片 1 - 已学懂 -->
+                <div class="collection-card learned" onclick="startLearning('feynman')">
+                    <div class="card-header">
+                        <div class="question-title">费曼学习法真的有用吗？我用它三个月背完考研专业课</div>
+                        <div class="card-meta">
+                            <span class="meta-item">👁️ 8.4K 热度</span>
+                            <span class="meta-item">👤 李思考</span>
+                            <span class="meta-item">📅 3 天前</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="core-insight">💡 核心：能不用术语、把一件事讲给外行听，才算真的会。</div>
+                    </div>
+                    <div class="learning-status status-learned">
+                        <span>✅</span>
+                        <span>已学懂</span>
+                    </div>
+                    <button class="start-button" disabled>
+                        ⛏ 已学懂
+                    </button>
+                </div>
+                
+                <!-- 收藏卡片 2 - 未学懂 -->
+                <div class="collection-card" onclick="startLearning('procrastination')">
+                    <div class="card-header">
+                        <div class="question-title">如何克服拖延症？从心理学角度谈解决方案</div>
+                        <div class="card-meta">
+                            <span class="meta-item">👁️ 6.2K 热度</span>
+                            <span class="meta-item">👤 心理学小王</span>
+                            <span class="meta-item">📅 1 天前</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="core-insight">💡 核心：拖延不是懒，是对任务的情感反应失调。</div>
+                    </div>
+                    <div class="learning-status status-unlearned">
+                        <span>⏰</span>
+                        <span>待学习</span>
+                    </div>
+                    <button class="start-button">
+                        ⛏ 开始学习这篇
+                    </button>
+                </div>
+                
+                <!-- 收藏卡片 3 - 未学懂 -->
+                <div class="collection-card" onclick="startLearning('memory')">
+                    <div class="card-header">
+                        <div class="question-title">为什么背了忘、忘了背？记忆的科学原理与实用技巧</div>
+                        <div class="card-meta">
+                            <span class="meta-item">👁️ 4.8K 热度</span>
+                            <span class="meta-item">👤 记忆专家</span>
+                            <span class="meta-item">📅 5 天前</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="core-insight">💡 核心：间隔重复 + 主动回忆，比死记硬背有效 10 倍。</div>
+                    </div>
+                    <div class="learning-status status-unlearned">
+                        <span>⏰</span>
+                        <span>待学习</span>
+                    </div>
+                    <button class="start-button">
+                        ⛏ 开始学习这篇
+                    </button>
+                </div>
+                
+                <!-- 收藏卡片 4 - 已学懂 -->
+                <div class="collection-card learned" onclick="startLearning('focus')">
+                    <div class="card-header">
+                        <div class="question-title">深度工作：如何在信息爆炸的时代保持专注</div>
+                        <div class="card-meta">
+                            <span class="meta-item">👁️ 7.1K 热度</span>
+                            <span class="meta-item">👤 效率达人</span>
+                            <span class="meta-item">📅 2 天前</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="core-insight">💡 核心：专注不是天赋，是可以刻意练习的肌肉。</div>
+                    </div>
+                    <div class="learning-status status-learned">
+                        <span>✅</span>
+                        <span>已学懂</span>
+                    </div>
+                    <button class="start-button" disabled>
+                        ⛏ 已学懂
+                    </button>
+                </div>
+                
+                <!-- 收藏卡片 5 - 未学懂 -->
+                <div class="collection-card" onclick="startLearning('thinking')">
+                    <div class="card-header">
+                        <div class="question-title">批判性思维：如何避免被观点和情绪左右</div>
+                        <div class="card-meta">
+                            <span class="meta-item">👁️ 5.3K 热度</span>
+                            <span class="meta-item">👤 思维教练</span>
+                            <span class="meta-item">📅 4 天前</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="core-insight">💡 核心：好观点不等于正确观点，区分事实和判断是关键。</div>
+                    </div>
+                    <div class="learning-status status-unlearned">
+                        <span>⏰</span>
+                        <span>待学习</span>
+                    </div>
+                    <button class="start-button">
+                        ⛏ 开始学习这篇
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快速拆解界面 -->
+        <div class="quick-decompose" id="decompose-view">
+            <div class="decompose-header">
+                <div class="decompose-title">🔍 快速拆解 - 如何克服拖延症</div>
+                <button class="back-button" onclick="backToCollection()">
+                    ← 返回收藏
+                </button>
+            </div>
+            
+            <button class="quick-mark-all" onclick="markAllAndStartLearning()">
+                ✅ 一键全懂，开始学习
+            </button>
+            
+            <div class="knowledge-cards">
+                <div class="knowledge-card">
+                    <div class="card-type type-concept">概念</div>
+                    <div class="card-content">拖延不是时间管理问题，而是情绪调节问题。当任务引发焦虑、不安等负面情绪时，大脑会选择回避。</div>
+                    <div class="card-source">— 心理学小王</div>
+                </div>
+                
+                <div class="knowledge-card">
+                    <div class="card-type type-method">方法</div>
+                    <div class="card-content">"2分钟法则"：任何任务，先做 2 分钟。大脑的启动成本远高于持续成本。</div>
+                    <div class="card-source">— 心理学小王</div>
+                </div>
+                
+                <div class="knowledge-card">
+                    <div class="card-type type-principle">原理</div>
+                    <div class="card-content">"预期障碍"理论：我们高估任务的困难度，低估自己的完成能力。完成后的实际感受往往比预期好。</div>
+                    <div class="card-source">— 《拖延心理学》</div>
+                </div>
+                
+                <div class="knowledge-card">
+                    <div class="card-type type-example">例子</div>
+                    <div class="card-content">写报告时，不要想着"我要写 3000 字"，而是想"我先打开文档，写第一句话"。</div>
+                    <div class="card-source">— 心理学小王</div>
+                </div>
+                
+                <div class="knowledge-card">
+                    <div class="card-type type-tip">提醒</div>
+                    <div class="card-content">完美的拖延症解方不存在，重点是"开始行动"而不是"消除拖延"。</div>
+                    <div class="card-source">— 心理学小王</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快速学习界面 -->
+        <div class="quick-learning" id="learning-view">
+            <div class="learning-header">
+                <div class="learning-title">🚀 快速学习 - 如何克服拖延症</div>
+                <button class="back-button" onclick="backToDecompose()">
+                    ← 返回拆解
+                </button>
+            </div>
+            
+            <div class="quiz-progress">
+                <div class="progress-info">
+                    <span>📖 1/3</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <span>⏱️ 00:25</span>
+                </div>
+            </div>
+            
+            <div class="quiz-content" id="quiz-content">
+                <div class="quiz-question">🤔 根据拖延症的心理学原理，拖延的根本原因是什么？</div>
+                
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="selectAnswer(this, false)">
+                        A. 时间管理能力差，不会安排计划
+                    </div>
+                    <div class="quiz-option" onclick="selectAnswer(this, true)">
+                        B. 对任务的负面情绪导致大脑选择回避
+                    </div>
+                    <div class="quiz-option" onclick="selectAnswer(this, false)">
+                        C. 性格懒惰，缺乏自我约束力
+                    </div>
+                    <div class="quiz-option" onclick="selectAnswer(this, false)">
+                        D. 任务太难，超出个人能力范围
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成就弹窗 -->
+    <div class="achievement-popup" id="achievement-popup">
+        <div class="achievement-icon">🎉</div>
+        <div class="achievement-title">学懂完成！</div>
+        <div class="achievement-desc">「如何克服拖延症」已加入你的知识库，炉火值 +50</div>
+        <button class="continue-button" onclick="continueToNext()">
+            ⛏ 开始学下一篇
+        </button>
+    </div>
+    
+    <!-- 右下角看山 -->
+    <div class="kanshan-corner" onclick="kanshanClick()">
+        🦊
+    </div>
+    
+    <!-- 右下角宇宙入口 -->
+    <div class="universe-corner" onclick="showUniverse()">
+        🌌
+    </div>
+    
+    <script>
+        let currentTopic = null;
+        let currentQuestion = 1;
+        let timerSeconds = 0;
+        let timerInterval = null;
+        
+        // 搜索收藏
+        function searchCollection(query) {
+            const cards = document.querySelectorAll('.collection-card');
+            if (query.trim() === '') {
+                cards.forEach(card => card.style.display = 'block');
+                return;
+            }
+            
+            cards.forEach(card => {
+                const title = card.querySelector('.question-title').textContent.toLowerCase();
+                const meta = Array.from(card.querySelectorAll('.meta-item')).map(item => item.textContent.toLowerCase()).join(' ');
+                const insight = card.querySelector('.core-insight').textContent.toLowerCase();
+                
+                if (title.includes(query.toLowerCase()) || meta.includes(query.toLowerCase()) || insight.includes(query.toLowerCase())) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        // 随机推荐
+        function randomRecommend() {
+            const cards = document.querySelectorAll('.collection-card:not(.learned)');
+            if (cards.length === 0) return;
+            
+            const randomCard = cards[Math.floor(Math.random() * cards.length)];
+            randomCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // 高亮效果
+            randomCard.style.transform = 'scale(1.05)';
+            randomCard.style.boxShadow = '0 8px 24px rgba(91,110,245,0.3)';
+            setTimeout(() => {
+                randomCard.style.transform = '';
+                randomCard.style.boxShadow = '';
+            }, 2000);
+        }
+        
+        // 开始学习
+        function startLearning(topicId) {
+            const card = event.currentTarget;
+            if (card.classList.contains('learned')) return;
+            
+            currentTopic = topicId;
+            document.getElementById('collection-view').style.display = 'none';
+            document.getElementById('decompose-view').style.display = 'block';
+            
+            // 根据不同主题更新内容
+            updateDecomposeContent(topicId);
+        }
+        
+        // 更新拆解内容
+        function updateDecomposeContent(topicId) {
+            const contents = {
+                'procrastination': {
+                    title: '🔍 快速拆解 - 如何克服拖延症',
+                    cards: [
+                        { type: 'concept', content: '拖延不是时间管理问题，而是情绪调节问题。当任务引发焦虑、不安等负面情绪时，大脑会选择回避。', source: '心理学小王' },
+                        { type: 'method', content: '"2分钟法则"：任何任务，先做 2 分钟。大脑的启动成本远高于持续成本。', source: '心理学小王' },
+                        { type: 'principle', content: '"预期障碍"理论：我们高估任务的困难度，低估自己的完成能力。完成后的实际感受往往比预期好。', source: '《拖延心理学》' },
+                        { type: 'example', content: '写报告时，不要想着"我要写 3000 字"，而是想"我先打开文档，写第一句话"。', source: '心理学小王' },
+                        { type: 'tip', content: '完美的拖延症解方不存在，重点是"开始行动"而不是"消除拖延"。', source: '心理学小王' }
+                    ]
+                },
+                'memory': {
+                    title: '🔍 快速拆解 - 为什么背了忘、忘了背',
+                    cards: [
+                        { type: 'concept', content: '记忆不是存储，而是重构。每次回忆都是在重新构建记忆路径。', source: '记忆专家' },
+                        { type: 'method', content: '间隔重复：1天后、3天后、7天后、1个月后，每个时间点复习一次。', source: '记忆专家' },
+                        { type: 'principle', content: '遗忘曲线：记忆在前 24 小时内遗忘最快，之后逐渐平缓。', source: '《认知心理学》' },
+                        { type: 'example', content: '背单词时，不要一遍遍地读，而是测验自己："这个单词什么意思？"', source: '记忆专家' },
+                        { type: 'tip', content: '主动回忆比被动阅读效果好 3 倍，这是记忆的核心秘密。', source: '记忆专家' }
+                    ]
+                },
+                'thinking': {
+                    title: '🔍 快速拆解 - 批判性思维',
+                    cards: [
+                        { type: 'concept', content: '批判性思维不是批判一切，而是对观点进行理性评估的能力。', source: '思维教练' },
+                        { type: 'method', content: 'S-O-R分析法：情境-观点-理由，拆解任何观点的构成要素。', source: '思维教练' },
+                        { type: 'principle', content: '认知偏差：大脑天生倾向于 shortcuts，这些捷径往往是错误之源。', source: '《思考，快与慢》' },
+                        { type: 'example', content: '看到"专家说"，先问：这个专家的领域是否相关？是否有利益冲突？', source: '思维教练' },
+                        { type: 'tip', content: '好的批判性思维者不是怀疑论者，而是理性怀疑者。', source: '思维教练' }
+                    ]
+                }
+            };
+            
+            const content = contents[topicId] || contents['procrastination'];
+            document.querySelector('.decompose-title').textContent = content.title;
+            
+            const cardsHtml = content.cards.map(card => 
+                <div class="knowledge-card">
+                    <div class="card-type type-"></div>
+                    <div class="card-content"></div>
+                    <div class="card-source">— </div>
+                </div>
+            ).join('');
+            
+            document.querySelector('.knowledge-cards').innerHTML = cardsHtml;
+        }
+        
+        // 获取类型名称
+        function getTypeName(type) {
+            const names = {
+                'concept': '概念',
+                'method': '方法',
+                'principle': '原理',
+                'example': '例子',
+                'tip': '提醒'
+            };
+            return names[type] || '其他';
+        }
+        
+        // 一键全懂并开始学习
+        function markAllAndStartLearning() {
+            const cards = document.querySelectorAll('.knowledge-card');
+            cards.forEach(card => {
+                card.classList.add('all-marked');
+            });
+            
+            setTimeout(() => {
+                showQuickLearning();
+            }, 800);
+        }
+        
+        // 显示快速学习
+        function showQuickLearning() {
+            document.getElementById('decompose-view').style.display = 'none';
+            document.getElementById('learning-view').style.display = 'block';
+            
+            currentQuestion = 1;
+            timerSeconds = 0;
+            updateQuizContent();
+            startTimer();
+        }
+        
+        // 更新学习内容（简化示例）
+        function updateQuizContent() {
+            const questions = [
+                {
+                    question: '🤔 根据拖延症的心理学原理，拖延的根本原因是什么？',
+                    options: ['A: 时间管理能力差', 'B: 情绪调节问题', 'C: 性格懒惰', 'D: 任务太难']
+                },
+                {
+                    question: '🤔 "2分钟法则"为什么有效？',
+                    options: ['A: 时间刚好', 'B: 降低启动门槛', 'C: 符合番茄法', 'D: 注意力集中']
+                },
+                {
+                    question: '🤔 面对拖延时，最有效的策略是什么？',
+                    options: ['A: 制定计划', 'B: 强制执行', 'C: 开始行动', 'D: 寻求监督']
+                }
+            ];
+            
+            // 简化：假设正确答案都是第二个选项
+            const question = questions[currentQuestion - 1];
+            document.querySelector('.quiz-question').textContent = question.question;
+            
+            const optionsHtml = question.options.map((text, index) => 
+                <div class="quiz-option" onclick="selectAnswer(this, )">
+                    
+                </div>
+            ).join('');
+            
+            document.querySelector('.quiz-options').innerHTML = optionsHtml;
+            
+            // 更新进度
+            document.querySelector('.progress-info span:first-child').textContent = 📖 /3;
+            document.getElementById('progress-fill').style.width = ${(currentQuestion / 3) * 100}%;
+        }
+        
+        // 开始计时
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                const minutes = Math.floor(timerSeconds / 60);
+                const seconds = timerSeconds % 60;
+                document.querySelector('.progress-info span:last-child').textContent = ⏱️ :;
+            }, 1000);
+        }
+        
+        // 选择答案
+        function selectAnswer(option, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            options.forEach(opt => opt.classList.add('selected'));
+            
+            option.classList.add(isCorrect ? 'correct' : 'wrong');
+            
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion > 3) {
+                    showAchievement();
+                } else {
+                    updateQuizContent();
+                }
+            }, 1500);
+        }
+        
+        // 显示成就
+        function showAchievement() {
+            clearInterval(timerInterval);
+            document.getElementById('achievement-popup').classList.add('show');
+        }
+        
+        // 继续学习下一篇
+        function continueToNext() {
+            document.getElementById('achievement-popup').classList.remove('show');
+            backToCollection();
+            
+            // 随机推荐下一篇
+            setTimeout(() => {
+                randomRecommend();
+            }, 500);
+        }
+        
+        // 返回收藏
+        function backToCollection() {
+            document.getElementById('learning-view').style.display = 'none';
+            document.getElementById('decompose-view').style.display = 'none';
+            document.getElementById('collection-view').style.display = 'block';
+            
+            // 更新对应卡片为已学懂
+            if (currentTopic) {
+                const cards = document.querySelectorAll('.collection-card');
+                cards.forEach(card => {
+                    const onclickStr = card.onclick ? card.onclick.toString() : '';
+                    if (onclickStr.includes(currentTopic) && !card.classList.contains('learned')) {
+                        card.classList.add('learned');
+                        card.querySelector('.learning-status').className = 'learning-status status-learned';
+                        card.querySelector('.learning-status').innerHTML = '<span>✅</span><span>已学懂</span>';
+                        card.querySelector('.start-button').disabled = true;
+                        card.querySelector('.start-button').innerHTML = '⛏ 已学懂';
+                    }
+                });
+            }
+        }
+        
+        // 返回拆解
+        function backToDecompose() {
+            document.getElementById('learning-view').style.display = 'none';
+            document.getElementById('decompose-view').style.display = 'block';
+            clearInterval(timerInterval);
+        }
+        
+        // 看山点击
+        function kanshanClick() {
+            const kanshan = document.querySelector('.kanshan-corner');
+            kanshan.style.transform = 'scale(1.2) rotate(360deg)';
+            setTimeout(() => {
+                kanshan.style.transform = 'scale(1.1)';
+            }, 300);
+        }
+        
+        // 显示宇宙
+        function showUniverse() {
+            alert('🌌 炼金宇宙成就展示\n\n✨ 已点亮星球：9 颗\n🔥 炉火等级：Lv.4\n🏆 成就：连续学习 8 天\n\n你的知识宇宙正在成长...');
+        }
+        
+        // 页面加载动画
+        window.addEventListener('load', function() {
+            const cards = document.querySelectorAll('.collection-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.4s';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
