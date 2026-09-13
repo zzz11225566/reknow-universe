@@ -1165,6 +1165,26 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 #rcpAiFields{margin-top:8px;display:grid;gap:8px}
 #rcpPipeline .rcp-row label{border:1px solid #e0e4ea;border-radius:9px;padding:5px 10px;background:#fff}
 .rcp-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
+/* ---- 10. 无边记白板（第 4 步） ---- */
+#rkBoard{position:fixed;inset:0;z-index:90;display:none;background:#f4efe6}
+#rkBoard.on{display:block}
+#rkBoardBar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fffdf8;border-bottom:1px solid #e8e2d4}
+#rkBoardBar b{font-size:1rem}
+#rkBoardBar .hint{font-size:.76rem;color:#9a9280;flex:1}
+#rkBoardBar .icon-btn{border:1px solid #e2dccb}
+#rkBoardBar .icon-btn.on{background:#5a3800;color:#fff}
+#rkBoardView{position:absolute;inset:56px 0 0 0;overflow:hidden;cursor:grab;
+  background-image:radial-gradient(#d9d2c0 1px,transparent 1px);background-size:24px 24px}
+#rkBoardWorld{position:absolute;left:0;top:0;transform-origin:0 0;width:1px;height:1px}
+#rkBoardCanvas{position:absolute;inset:0;pointer-events:none}
+#rkBoardView .rk-note{position:absolute;border-radius:12px;box-shadow:0 6px 18px rgba(90,56,0,.14);border:1px solid rgba(90,56,0,.12)}
+.rk-note-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 10px 2px;cursor:grab;touch-action:none}
+.rk-note-colors{display:flex;gap:4px}
+.rk-note-colors i{width:12px;height:12px;border-radius:50%;display:inline-block;cursor:pointer;border:1px solid rgba(0,0,0,.15)}
+.rk-note-del{cursor:pointer;color:#9a8a6a;font-weight:700;padding:0 3px}
+.rk-note-del:hover{color:#c00}
+.rk-note-text{padding:2px 12px 12px;min-height:52px;outline:none;font-size:.86rem;line-height:1.65;color:#4a3c20}
 </style>
 </head>
 <body>
@@ -1184,6 +1204,7 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
       <button class="icon-btn" id="btnSnd" title="音效开关">🔊</button>
       <button class="icon-btn" id="btnHelp" title="新手引导">？</button>
       <button class="icon-btn" id="btnRecipe" title="炼金配方：定制你的 ReKnow">⚗️</button>
+      <button class="icon-btn" id="btnBoard" title="无边记白板：随手记，云端同步">📋</button>
       <button class="icon-btn" id="btnReset" title="清空进度">↺</button>
       <button class="acc" id="btnAuth" title="账户与云端同步"><span class="u" id="authAva">游</span><span id="authLabel">游客模式 · 点击登录</span></button>
     </div>
@@ -1337,6 +1358,22 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
   <div class="btnrow" style="justify-content:center;margin-top:10px"><button class="btn" id="rcpClose">关闭</button></div>
 </div></div>
 
+<!-- 无边记白板（第 4 步，逻辑在 board.js） -->
+<div id="rkBoard">
+  <div id="rkBoardBar">
+    <b>📋 无边记白板</b>
+    <button class="icon-btn" id="rkBoardPen" title="画笔开关">✏️ 画笔</button>
+    <button class="icon-btn" id="rkBoardClear" title="清空白板">🗑</button>
+    <span id="rkBoardZoom" style="font-size:.8rem;color:#9a9280">100%</span>
+    <span class="hint">拖空白平移 · 滚轮缩放 · 双击新建便签 · 便签顶栏拖动 · Esc 关闭 · 自动保存并云端同步</span>
+    <button class="icon-btn" id="rkBoardClose" title="关闭">✕</button>
+  </div>
+  <div id="rkBoardView">
+    <canvas id="rkBoardCanvas"></canvas>
+    <div id="rkBoardWorld"></div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toasts" style="position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:270;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none"></div>
 <div id="confetti"></div>
 
@@ -1435,6 +1472,7 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 
 <script src="data.js"></script>
 <script src="app.js"></script>
+<script src="board.js"></script>
 <script src="boot.js"></script>
 </body>
 </html>

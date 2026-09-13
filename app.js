@@ -1150,7 +1150,7 @@ renderFlow = function () {
    ================================================================ */
 var RKAuth = (function () {
   var KEY = "rkAuth";
-  var SYNC_KEYS = ["rkSave", "rkCustom", "rkUni6", "rkUniOrig", "rkRecipe"];
+  var SYNC_KEYS = ["rkSave", "rkCustom", "rkUni6", "rkUniOrig", "rkRecipe", "rkBoard"];
   var pushing = false, pushTimer = null, lastPushOk = 0;
 
   function load() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } }

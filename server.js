@@ -977,7 +977,7 @@ function authUser(req) {
   return u ? { id: u.id, name: u.name, created_at: u.created_at } : null
 }
 /* 允许云端同步的键（白名单，防止任意键撑爆库） */
-const SYNC_KEYS = ['rkSave', 'rkCustom', 'rkUni6', 'rkUniOrig', 'rkRecipe']
+const SYNC_KEYS = ['rkSave', 'rkCustom', 'rkUni6', 'rkUniOrig', 'rkRecipe', 'rkBoard']
 const SYNC_VALUE_CAP = 2 * 1024 * 1024 // 单键 2MB 上限
 
 const server = http.createServer(async function (req, res) {
