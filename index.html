@@ -919,6 +919,226 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 .uni-hints{background:rgba(22,13,6,.68);border:1px solid rgba(255,200,110,.3);border-radius:12px;color:rgba(255,228,174,.85);backdrop-filter:blur(8px);box-shadow:0 6px 20px rgba(0,0,0,.3);padding:9px 14px}
 .uni-hints b{color:#ffd98a}
 #uniShell[data-tod=day] .uni-hints{background:rgba(22,13,6,.62)}
+/* ================================================================
+   v7 · 电影级调色 / 玻璃液态质感 / 看山重定位 / AI 与热点房间 / 批注引导
+   （追加层：只做增强，不改动上方既有规则，同名项以本段为准）
+   ================================================================ */
+
+/* ---- 1. 电影级画面叠加层（暗角 + 冷调高光 + 胶片颗粒 + 光学液膜） ---- */
+.uni-grade{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.uni-grade .vg{position:absolute;inset:0;background:radial-gradient(126% 86% at 50% 44%,rgba(0,0,0,0) 40%,rgba(2,4,12,.30) 74%,rgba(0,2,8,.62) 100%)}
+.uni-grade .sheen{position:absolute;inset:-14%;mix-blend-mode:screen;opacity:.9;
+  background:linear-gradient(112deg,rgba(255,255,255,0) 34%,rgba(198,224,255,.075) 45%,rgba(255,246,222,.10) 50%,rgba(176,214,255,.06) 55%,rgba(255,255,255,0) 66%),
+             radial-gradient(56% 38% at 16% 8%,rgba(150,196,255,.13),rgba(0,0,0,0) 68%),
+             radial-gradient(46% 32% at 88% 92%,rgba(255,196,120,.10),rgba(0,0,0,0) 70%);
+  animation:rkSheen 22s ease-in-out infinite}
+.uni-grade .grain{position:absolute;inset:0;opacity:.055;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:rkGrain .7s steps(3) infinite}
+.uni-grade .lens{position:absolute;inset:0;opacity:.5;mix-blend-mode:screen;
+  background:radial-gradient(80% 55% at 50% 0%,rgba(120,170,255,.08),rgba(0,0,0,0) 60%),
+             linear-gradient(180deg,rgba(140,180,255,.05),rgba(0,0,0,0) 22%,rgba(0,0,0,0) 78%,rgba(255,180,110,.06))}
+@keyframes rkSheen{0%{transform:translate3d(-4%,-2%,0) rotate(-.6deg)}50%{transform:translate3d(4%,2%,0) rotate(.6deg)}100%{transform:translate3d(-4%,-2%,0) rotate(-.6deg)}}
+@keyframes rkGrain{0%{transform:translate3d(0,0,0)}33%{transform:translate3d(-3%,2%,0)}66%{transform:translate3d(2%,-3%,0)}100%{transform:translate3d(0,0,0)}}
+#uniShell.no-grade .uni-grade{display:none}
+
+/* ---- 2. 玻璃液态质感（HUD / 面板 / 卡片统一玻璃语言） ---- */
+#uniShell .uni-panel,#uniShell .uni-card,#uniShell .uni-clock,#uniShell .uni-hints,
+#uniShell .uni-weather,#uniShell .uni-search,#uniShell .uni-btn,#uniShell .uni-env,
+.ur-selmenu,.uni-mind .um-box,.ur-note-pop,.rk-glass{
+  backdrop-filter:blur(20px) saturate(165%) brightness(1.07);
+  -webkit-backdrop-filter:blur(20px) saturate(165%) brightness(1.07)}
+#uniShell .uni-panel,#uniShell .uni-card,.uni-mind .um-box{isolation:isolate}
+#uniShell .uni-panel::before,#uniShell .uni-card::before,.uni-mind .um-box::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(168deg,rgba(255,255,255,.20),rgba(255,255,255,.045) 26%,rgba(255,255,255,0) 52%),
+             radial-gradient(150% 95% at 8% -12%,rgba(255,255,255,.22),rgba(255,255,255,0) 56%),
+             radial-gradient(120% 70% at 96% 108%,rgba(160,200,255,.16),rgba(255,255,255,0) 62%);
+  mix-blend-mode:screen;opacity:.92}
+#uniShell .uni-panel::after,#uniShell .uni-card::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.30),inset 0 -1px 0 rgba(255,255,255,.10),inset 0 0 0 1px rgba(255,255,255,.10);
+  background:linear-gradient(102deg,rgba(255,255,255,0) 40%,rgba(255,255,255,.10) 50%,rgba(255,255,255,0) 60%);
+  background-size:280% 100%;animation:rkGlassFlow 14s ease-in-out infinite}
+@keyframes rkGlassFlow{0%{background-position:120% 0}50%{background-position:-20% 0}100%{background-position:120% 0}}
+#uniShell .uni-panel>.up-head,#uniShell .uni-panel>.uni-hot,#uniShell .uni-panel>.ai-pane,#uniShell .uni-card>*{position:relative;z-index:1}
+#uniShell .uni-weather,#uniShell .uni-clock{position:relative;overflow:hidden}
+#uniShell .uni-weather::after,#uniShell .uni-clock::after{
+  content:'';position:absolute;left:6%;right:6%;top:1px;height:38%;border-radius:999px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));opacity:.7}
+#uniShell .uni-search{box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 6px 18px rgba(0,0,0,.28)}
+#uniShell .uni-btn{box-shadow:inset 0 1px 0 rgba(255,255,255,.20),0 6px 16px rgba(0,0,0,.26)}
+#uniShell .uni-btn:hover,#uniShell .wbtn:hover{transform:translateY(-1px)}
+@media (prefers-reduced-motion:reduce){.uni-grade .grain,.uni-grade .sheen,#uniShell .uni-panel::after,#uniShell .uni-card::after{animation:none}}
+
+/* ---- 3. 刘看山：固定安全角落 + 卡通可爱化（不再挡视野） ---- */
+.uni-fox{position:absolute;z-index:7;top:auto;left:auto;right:auto;bottom:auto;transform:none;
+  transition:left .45s cubic-bezier(.22,.9,.3,1.3),bottom .45s cubic-bezier(.22,.9,.3,1.3),opacity .3s;
+  pointer-events:none;display:none;will-change:left,bottom}
+.uni-fox.show{display:block}
+.uni-fox .foxwrap{position:relative;display:block;pointer-events:auto}
+.uni-fox img{width:76px;height:76px;object-fit:contain;display:block;cursor:grab;
+  filter:drop-shadow(0 8px 16px rgba(0,0,0,.46)) drop-shadow(0 0 10px rgba(255,206,130,.20)) saturate(1.14) contrast(1.05);
+  animation:foxCute 2.8s ease-in-out infinite;transform-origin:50% 92%}
+.uni-fox.big img{width:100px;height:100px}
+.uni-fox.min img{width:56px;height:56px;opacity:.9}
+.uni-fox img:active{cursor:grabbing}
+@keyframes foxCute{
+  0%{transform:translateY(0) rotate(-2.4deg) scale(1,1)}
+  22%{transform:translateY(-7px) rotate(2.2deg) scale(.982,1.022)}
+  46%{transform:translateY(-11px) rotate(-1.2deg) scale(1.012,.99)}
+  70%{transform:translateY(-5px) rotate(2.6deg) scale(.99,1.012)}
+  100%{transform:translateY(0) rotate(-2.4deg) scale(1,1)}}
+@keyframes foxHop{0%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-20px) scale(.94,1.08) rotate(6deg)}60%{transform:translateY(-8px) scale(1.06,.94) rotate(-5deg)}100%{transform:translateY(0) scale(1,1) rotate(0)}}
+.uni-fox.hop img{animation:foxHop .62s cubic-bezier(.3,1.5,.4,1)}
+.uni-fox.spin img{animation:foxSpin .8s cubic-bezier(.3,1.2,.4,1)}
+@keyframes foxSpin{0%{transform:rotate(0) scale(1)}50%{transform:rotate(-16deg) scale(1.1)}100%{transform:rotate(0) scale(1)}}
+.uni-fox .glowpad{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:78%;height:14px;border-radius:50%;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(255,196,110,.42),rgba(255,160,60,0) 72%);filter:blur(2px);pointer-events:none}
+.uni-fox .sparkle{position:absolute;pointer-events:none;font-size:12px;opacity:0;animation:foxSpark 3.4s ease-in-out infinite}
+.uni-fox .sparkle.s1{left:-6px;top:6px;animation-delay:.2s}
+.uni-fox .sparkle.s2{right:-4px;top:16px;animation-delay:1.3s}
+.uni-fox .sparkle.s3{left:46%;top:-6px;animation-delay:2.2s}
+@keyframes foxSpark{0%{opacity:0;transform:translateY(4px) scale(.7)}30%{opacity:.95;transform:translateY(-4px) scale(1.12)}60%{opacity:.5;transform:translateY(-9px) scale(.95)}100%{opacity:0;transform:translateY(-12px) scale(.8)}}
+.uni-fox .foxtools{position:absolute;right:-2px;top:-26px;display:none;gap:4px;background:rgba(16,11,6,.86);
+  border:1px solid rgba(255,200,110,.45);border-radius:999px;padding:3px 5px;backdrop-filter:blur(8px)}
+.uni-fox .foxwrap:hover .foxtools{display:flex}
+.uni-fox .foxtools button{border:none;background:none;color:#ffd98a;font-size:.72rem;cursor:pointer;padding:1px 4px;border-radius:8px;line-height:1.3}
+.uni-fox .foxtools button:hover{background:rgba(255,200,110,.18)}
+.uni-fox .fb{bottom:100%;margin-bottom:8px;border-radius:16px 16px 16px 6px}
+.uni-fox .fb .fx{left:26px}
+@media (max-width:760px){
+  .uni-fox img{width:62px;height:62px}.uni-fox.big img{width:78px;height:78px}
+  .uni-fox .fb{width:190px;max-width:70vw}
+  .uni-fox .foxtools{top:-24px}
+}
+
+/* ---- 4. AI 对话 + 多人实时热点话题房间（右侧抽屉） ---- */
+#uniShell .uni-ai{position:absolute;top:74px;right:14px;bottom:14px;width:min(392px,94vw);z-index:12;
+  display:none;flex-direction:column;overflow:hidden;color:#fff;border-radius:18px;
+  background:linear-gradient(180deg,rgba(24,17,40,.86),rgba(10,8,20,.90));
+  border:1px solid rgba(255,255,255,.16);box-shadow:0 20px 54px rgba(0,0,0,.55)}
+#uniShell .uni-ai.on{display:flex;animation:panelIn .3s ease}
+.uni-ai .aitabs{display:flex;gap:4px}
+.uni-ai .aitab{border:1px solid transparent;background:rgba(255,255,255,.07);color:rgba(255,255,255,.72);
+  font-size:.78rem;padding:5px 10px;border-radius:999px;cursor:pointer;transition:.16s}
+.uni-ai .aitab.on{background:linear-gradient(135deg,rgba(124,92,255,.6),rgba(15,136,235,.55));color:#fff;border-color:rgba(180,200,255,.5);box-shadow:0 0 12px rgba(120,140,255,.35)}
+.ai-pane{flex:1;display:flex;flex-direction:column;min-height:0}
+.ai-pane[hidden]{display:none}
+.ai-msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px;min-height:0}
+.ai-msgs .m{max-width:88%;font-size:.84rem;line-height:1.72;padding:8px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
+.ai-msgs .m.me{align-self:flex-end;background:linear-gradient(135deg,rgba(15,136,235,.85),rgba(124,92,255,.8));border-bottom-right-radius:5px}
+.ai-msgs .m.ai{align-self:flex-start;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);border-bottom-left-radius:5px;backdrop-filter:blur(6px)}
+.ai-msgs .m.sys{align-self:center;background:rgba(255,255,255,.06);font-size:.74rem;color:rgba(255,255,255,.68);text-align:center;border-radius:10px;max-width:96%}
+.ai-msgs .m .who{display:block;font-size:.68rem;opacity:.66;margin-bottom:3px}
+.ai-msgs .m .pmk{display:inline-block;font-size:.64rem;border-radius:999px;padding:0 7px;margin-left:6px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);vertical-align:1px}
+.ai-msgs .m .pmk.ds{background:rgba(80,140,255,.28);color:#bcd6ff}
+.ai-msgs .m .pmk.zh{background:rgba(60,200,140,.24);color:#b6f2d6}
+.ai-msgs .m .pmk.local{background:rgba(255,180,90,.24);color:#ffe0b8}
+.ai-quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px}
+.ai-quick button{font-size:.72rem;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.82);padding:4px 10px;cursor:pointer;transition:.16s}
+.ai-quick button:hover{background:rgba(124,92,255,.30);border-color:rgba(180,190,255,.5)}
+.ai-in{display:flex;gap:8px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.12);align-items:flex-end}
+.ai-in textarea,.ai-in input{flex:1;resize:none;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+  border-radius:12px;color:#fff;font-size:.84rem;padding:8px 10px;font-family:inherit;outline:none;height:52px}
+.ai-in input{height:38px}
+.ai-in textarea:focus,.ai-in input:focus{border-color:rgba(160,180,255,.55);box-shadow:0 0 0 3px rgba(124,92,255,.16)}
+.ai-in button{border:none;border-radius:12px;padding:0 16px;height:38px;font-size:.82rem;font-weight:600;cursor:pointer;
+  background:linear-gradient(135deg,#7c5cff,#0f88eb);color:#fff;box-shadow:0 6px 16px rgba(90,110,255,.35)}
+.ai-in button:disabled{opacity:.5;cursor:default;box-shadow:none}
+.uni-ai .up-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.12)}
+.uni-ai .up-head .src{margin-left:auto}
+.room-top{display:flex;align-items:center;gap:8px;padding:10px 12px 6px}
+.room-top input{width:96px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:9px;color:#fff;font-size:.76rem;padding:5px 8px;outline:none}
+.room-live{margin-left:auto;font-size:.68rem;border-radius:999px;padding:3px 9px;background:rgba(255,255,255,.09);color:rgba(255,255,255,.65)}
+.room-live.on{background:rgba(55,214,122,.18);color:#9ff0c0;border:1px solid rgba(55,214,122,.4)}
+.room-topics{padding:0 12px 8px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+.room-topics .rt{display:flex;gap:8px;align-items:flex-start;font-size:.76rem;line-height:1.5;padding:7px 9px;border-radius:10px;
+  background:rgba(255,255,255,.05);border:1px solid transparent;cursor:pointer;transition:.15s;color:rgba(255,255,255,.86)}
+.room-topics .rt:hover{background:rgba(255,255,255,.10)}
+.room-topics .rt.on{background:rgba(255,120,60,.18);border-color:rgba(255,150,90,.5)}
+.room-topics .rt i{font-style:normal;flex:none;color:#ffb37a;font-weight:700;min-width:16px}
+.room-cur{padding:8px 12px;font-size:.74rem;color:rgba(255,255,255,.72);border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.045);line-height:1.6}
+.room-cur b{color:#ffd98a}
+.room-cur a{color:#9fd0ff}
+.room-msgs .m{max-width:92%}
+.room-msgs .m.other{align-self:flex-start;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13)}
+.room-msgs .m.mine{align-self:flex-end;background:linear-gradient(135deg,rgba(230,134,46,.8),rgba(200,90,40,.75))}
+.room-msgs .m.aibot{align-self:flex-start;background:linear-gradient(135deg,rgba(124,92,255,.32),rgba(15,136,235,.26));border:1px solid rgba(170,190,255,.34)}
+.room-msgs .m .who{opacity:.7}
+#uniShell .uni-ai .u-empty{padding:14px;font-size:.8rem;line-height:1.8;color:rgba(255,255,255,.72)}
+.ai-typing{display:inline-flex;gap:3px;align-items:center}
+.ai-typing i,.typing3 i{width:5px;height:5px;border-radius:50%;background:currentColor;animation:aiBlink 1s infinite;display:inline-block}
+.ai-typing i:nth-child(2),.typing3 i:nth-child(2){animation-delay:.16s}
+.ai-typing i:nth-child(3),.typing3 i:nth-child(3){animation-delay:.32s}
+@keyframes aiBlink{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+
+/* ---- 5. 原文阅读器：推取知乎原文 + 批注快速上手 ---- */
+.ur-srcbar{display:flex;align-items:center;gap:8px;padding:7px 14px;background:linear-gradient(180deg,#fff7e6,#fffdf7);
+  border-bottom:1px solid #f0e6cf;font-size:.74rem;color:#8a7c5e;flex-wrap:wrap}
+.ur-srcbar .tag2{border-radius:999px;padding:2px 8px;background:#fff;border:1px solid #ecdfc2;color:#9a8a63}
+.ur-srcbar .tag2.real{background:#eaf7ef;border-color:#b9e3c8;color:#1f8a52}
+.ur-srcbar button{margin-left:auto;border:1px solid #e6c98a;background:linear-gradient(135deg,#ffd777,#f0a63c);color:#5a3800;
+  border-radius:9px;padding:5px 12px;font-size:.76rem;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(230,160,60,.32)}
+.ur-srcbar button:disabled{opacity:.55;cursor:default;box-shadow:none}
+.ur-srcbar a{color:#2b6ca8;text-decoration:none}
+.ur-body p.para{position:relative;transition:background .18s}
+.ur-body p.para:hover{background:linear-gradient(90deg,rgba(255,211,66,.10),rgba(255,211,66,0))}
+.ur-pbtn{position:absolute;left:-30px;top:2px;width:24px;height:24px;border-radius:8px;border:1px solid #e3d9bd;background:#fff;
+  color:#c98a12;font-size:.8rem;line-height:1;cursor:pointer;opacity:0;transition:.16s;display:grid;place-items:center;padding:0}
+.ur-body p.para:hover .ur-pbtn{opacity:.45}
+.ur-pbtn:hover{opacity:1;transform:scale(1.12);box-shadow:0 4px 12px rgba(200,150,40,.3)}
+@media (max-width:760px){.ur-pbtn{left:-2px;top:-2px;opacity:.5}}
+.ur-guide{position:fixed;z-index:260;background:linear-gradient(135deg,#2b2350,#1b1636);color:#fff;border-radius:14px;
+  padding:12px 14px;max-width:284px;box-shadow:0 16px 40px rgba(0,0,0,.42);font-size:.8rem;line-height:1.7;
+  border:1px solid rgba(180,190,255,.34)}
+.ur-guide b{color:#ffd98a}
+.ur-guide .gstep{font-size:.68rem;opacity:.62;display:block;margin-bottom:4px}
+.ur-guide .grow{display:flex;gap:8px;margin-top:9px}
+.ur-guide button{border:none;border-radius:9px;padding:5px 12px;font-size:.76rem;cursor:pointer;font-weight:600}
+.ur-guide .gnext{background:linear-gradient(135deg,#7c5cff,#0f88eb);color:#fff}
+.ur-guide .gskip{background:rgba(255,255,255,.12);color:rgba(255,255,255,.82)}
+.ur-gspot{position:fixed;z-index:255;border-radius:10px;box-shadow:0 0 0 3px rgba(255,211,66,.9),0 0 0 9999px rgba(10,8,20,.46);pointer-events:none;transition:.25s}
+.ur-selmenu{padding:8px 11px;gap:7px;background:linear-gradient(135deg,rgba(38,44,72,.97),rgba(24,28,50,.97));border:1px solid rgba(160,180,255,.35)}
+.ur-selmenu .sm{width:26px;height:26px}
+.ur-selmenu .sm.note{font-size:.86rem;padding:0 9px;border:1px dashed rgba(255,255,255,.4);border-radius:8px}
+.ur-selmenu .sm.note:hover{border-style:solid;background:rgba(124,92,255,.35)}
+.ur-tip{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;color:#8a7c5e;background:rgba(15,136,235,.07);
+  border:1px dashed rgba(15,136,235,.35);border-radius:999px;padding:2px 9px;margin-left:6px}
+.ur-body p.para.zh-real{border-left:2px solid rgba(15,136,235,.35);padding-left:9px;margin-left:-11px}
+
+/* ---- 6. 拆解页：知乎搜索对照条（app.js 注入） ---- */
+.zh-strip{margin:0 0 14px;border:1px solid rgba(15,136,235,.28);border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#f7fbff,#fff)}
+.zh-strip .zs-head{display:flex;align-items:center;gap:9px;padding:10px 14px;background:linear-gradient(90deg,rgba(15,136,235,.10),rgba(124,92,255,.07));flex-wrap:wrap}
+.zh-strip .zs-head b{font-size:.94rem}
+.zh-strip .zs-head .zs-src{font-size:.68rem;color:#5a6b85;background:rgba(15,136,235,.10);border-radius:999px;padding:2px 9px}
+.zh-strip .zs-body{padding:12px 14px}
+.zh-strip .zs-row{display:flex;gap:8px;flex-wrap:wrap}
+.zh-strip input{flex:1;min-width:180px;border:1px solid #dfe6ef;border-radius:10px;padding:8px 11px;font-size:.85rem;outline:none;font-family:inherit}
+.zh-strip input:focus{border-color:#0f88eb;box-shadow:0 0 0 3px rgba(15,136,235,.12)}
+.zh-strip button{border:1px solid #cfe0f5;background:#fff;color:#0f5c9e;border-radius:10px;padding:8px 13px;font-size:.82rem;font-weight:600;cursor:pointer;transition:.16s}
+.zh-strip button:hover{background:#eef6ff;border-color:#8fbfe8}
+.zh-strip button.primary{background:linear-gradient(135deg,#0f88eb,#5b6ef5);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(15,136,235,.3)}
+.zh-strip button:disabled{opacity:.55;cursor:default;box-shadow:none}
+.zh-list{display:flex;flex-direction:column;gap:9px;margin-top:11px}
+.zh-item{border:1px solid #e8eef6;border-radius:12px;padding:10px 12px;background:#fff;transition:.16s}
+.zh-item:hover{border-color:#b9d6f2;box-shadow:0 6px 18px rgba(15,136,235,.10)}
+.zh-item .zt{font-weight:700;font-size:.9rem;color:#12324f;line-height:1.5}
+.zh-item .zm{font-size:.7rem;color:#7b8a9d;margin:4px 0 6px;display:flex;gap:10px;flex-wrap:wrap}
+.zh-item .zx{font-size:.82rem;color:#4b5a6e;line-height:1.75;max-height:5.4em;overflow:hidden}
+.zh-item .za{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.zh-item .za a,.zh-item .za button{font-size:.76rem;text-decoration:none;border-radius:9px;padding:5px 11px;border:1px solid #d8e4f2;background:#fff;color:#2b6ca8;cursor:pointer}
+.zh-item .za button.gold{background:linear-gradient(135deg,#ffd777,#f0a63c);border-color:transparent;color:#5a3800;font-weight:700}
+.zh-empty{font-size:.82rem;color:#8a94a2;padding:9px 2px}
+.zh-note{font-size:.74rem;color:#8a94a2;margin-top:7px;line-height:1.7}
+
+/* ---- 7. AI 抬杠：实时状态与供应商徽标 ---- */
+.dmsg .pmk{display:inline-block;font-size:.66rem;border-radius:999px;padding:0 7px;margin-left:6px;background:rgba(124,92,255,.18);color:#6b4fd8;vertical-align:1px}
+.dmsg .pmk.ds{background:rgba(15,136,235,.16);color:#0f5c9e}
+.dmsg .pmk.local{background:rgba(230,150,60,.18);color:#a86a1c}
+.dmsg.busy{opacity:.85;font-style:italic}
+.typing3{display:inline-flex;gap:3px;align-items:center;margin-left:4px}
 </style>
 </head>
 <body>
@@ -1020,13 +1240,16 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 <!-- ===== 炼金宇宙（沉浸式 3D 覆盖层）===== -->
 <div id="uniShell" aria-hidden="true">
   <canvas id="uniCanvas"></canvas>
+  <!-- v7：电影级调色 / 玻璃液膜叠加层（纯 CSS，pointer-events:none） -->
+  <div class="uni-grade" id="uniGrade" aria-hidden="true"><span class="lens"></span><span class="sheen"></span><span class="vg"></span><span class="grain"></span></div>
   <div class="uni-hud">
     <div class="uni-top">
       <div class="uni-brand"><span class="ud"></span><b>炼金宇宙</b><small>你的收藏 · 长成星海</small></div>
-      <div class="uni-weather" id="uniWeather" title="一键切换天气，场景光影 / 粒子 / 看山随之变化"></div>
+      <div class="uni-weather" id="uniWeather" title="六种天气一键切换：场景光影 / 粒子 / 看山动作随之变化"></div>
       <div class="uni-actions">
         <span class="uni-env" id="uniEnv" title="环境数据：接入后端与真实天气后自动点亮「实时」"><span class="livedot"></span><span id="uniEnvTxt">本地演示数据</span></span>
         <input class="uni-search" id="uniSearch" type="search" placeholder="🔍 搜索选题 / 关键词…" autocomplete="off">
+        <button class="uni-btn" id="uniAiBtn" title="AI 对话 + 多人实时热点话题房间">🤖 AI · 热聊</button>
         <button class="uni-btn" id="uniHotBtn">🔥 热榜</button>
         <button class="uni-btn gold" id="uniBack" title="返回收藏夹">✕ 返回</button>
       </div>
@@ -1042,7 +1265,44 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
       <div class="uni-hot" id="uniHotList"></div>
     </div>
     <div class="uni-card" id="uniCard"></div>
-    <div class="uni-fox" id="uniFox"><div class="fb" id="uniFoxBubble"><div class="fx"></div></div><img id="uniFoxImg" src="assets/wave.gif" alt="看山"></div>
+    <!-- v7：AI 对话 + 多人实时热点话题房间 -->
+    <div class="uni-ai" id="uniAiPanel">
+      <div class="up-head">
+        <div class="aitabs"><button class="aitab on" data-ait="ai">🤖 AI 对话</button><button class="aitab" data-ait="room">🔥 热点房间</button></div>
+        <span class="src" id="uniAiSrc">检测中…</span>
+        <button class="x" id="uniAiClose" title="收起">✕</button>
+      </div>
+      <div class="ai-pane" id="uniAiPane">
+        <div class="ai-msgs" id="uniAiMsgs"></div>
+        <div class="ai-quick" id="uniAiQuick"></div>
+        <div class="ai-in"><textarea id="uniAiInput" placeholder="问我任何关于这篇收藏的问题…（Ctrl+Enter 发送）"></textarea><button id="uniAiSend">发送</button></div>
+      </div>
+      <div class="ai-pane" id="uniRoomPane" hidden>
+        <div class="room-top">
+          <input id="uniRoomNick" placeholder="昵称" maxlength="12">
+          <span class="room-live" id="uniRoomLive">未连接</span>
+        </div>
+        <div class="room-topics" id="uniRoomTopics"><div class="u-empty">正在获取知乎实时热榜…</div></div>
+        <div class="room-cur" id="uniRoomCur">选一个热点话题，进入多人实时讨论</div>
+        <div class="ai-msgs room-msgs" id="uniRoomMsgs"><div class="u-empty">进入话题后，这里会实时显示其他人的发言（打开多个浏览器窗口即可看到实时互通）。<br>输入 <b>@AI</b> 可以让小炼也参与讨论，回答会广播给房间里所有人。</div></div>
+        <div class="ai-in"><input id="uniRoomInput" placeholder="说点什么…（@AI 让小炼回答）"><button id="uniRoomSend">发送</button></div>
+      </div>
+    </div>
+    <!-- 刘看山：固定安全角落（可拖动 / 可缩小 / 可藏），不再悬在星海中央挡视野 -->
+    <div class="uni-fox docked" id="uniFox">
+      <div class="foxwrap">
+        <div class="fb" id="uniFoxBubble"><div class="fx"></div></div>
+        <img id="uniFoxImg" src="assets/wave.gif" alt="看山" draggable="false">
+        <span class="glowpad"></span>
+        <span class="sparkle s1">✨</span><span class="sparkle s2">⭐</span><span class="sparkle s3">💫</span>
+        <span class="foxtools">
+          <button data-foxtool="hop" title="跳一下">🐾</button>
+          <button data-foxtool="min" title="变小一点">🔽</button>
+          <button data-foxtool="dock" title="回到默认角落">📌</button>
+          <button data-foxtool="hide" title="藏起来（点 AI 面板里可召回）">🙈</button>
+        </span>
+      </div>
+    </div>
     <div class="uni-load" id="uniLoad"><span class="spinner"></span><span id="uniLoadTxt">正在点燃炼金炉…</span></div>
   </div>
 </div>
@@ -1055,10 +1315,13 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
     <span>圈点：</span><span class="hl-chip y" data-c="y" title="黄色高亮"></span><span class="hl-chip b" data-c="b" title="蓝色高亮"></span><span class="hl-chip p" data-c="p" title="粉色高亮"></span>
     <span class="sep"></span>
     <button class="note" id="urNoteBtn">📝 给选中文字加批注</button>
+    <button class="note" id="urGuideBtn" title="三步上手：怎么快速做批注">❔ 快速上手</button>
     <span class="sep"></span>
     <span class="dim">选中文字 → 点色块高亮 / 点📝加批注（自动保存）</span>
     <span class="cnt" id="urCnt"></span>
   </div>
+  <!-- v7：知乎原文来源条（拉取真实原文 → 直接在上面批注） -->
+  <div class="ur-srcbar" id="urSrcBar"></div>
   <div class="ur-body" id="urBody" tabindex="0"></div>
   <div class="ur-list" id="urList"></div>
 </div>

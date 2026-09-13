@@ -89,12 +89,15 @@
       else if (kind === 'note') { tone(760, 0.1, 'triangle', 0.05); tone(1140, 0.14, 'triangle', 0.04, 0.06); }
       else if (kind === 'birth') { tone(523, 0.18, 'sine', 0.05); tone(784, 0.24, 'sine', 0.045, 0.1); }
       else if (kind === 'land') { tone(1568, 0.22, 'triangle', 0.055); tone(2093, 0.34, 'sine', 0.028, 0.07); } // E3：落位「叮」+ 短混响尾音
+      else if (kind === 'bolt') { tone(2400, 0.05, 'square', 0.03); tone(1800, 0.09, 'square', 0.02, 0.03); } // v7 闪电劈裂声
+      else if (kind === 'thunder') { tone(62, 1.6, 'sawtooth', 0.05); tone(43, 2.1, 'triangle', 0.048, 0.16); tone(88, 0.6, 'square', 0.018, 0.03); } // v7 低频轰鸣
     } catch (e) {}
   }
 
   /* ---------------- D1：天气氛围音（雨 / 雪轻噪声循环，AudioBuffer 白噪声 + 低通 + 缓慢 gain 起伏） ---------------- */
   var AMB = { rain: null, snow: null, muted: false, lastKey: null };
-  function ambKindOf(key) { return key === 'rain' ? 'rain' : key === 'snow' ? 'snow' : null; }
+  /* v7：雷暴复用「雨」的氛围底噪（更密更闷），极光复用一个极轻的高频空气声 */
+  function ambKindOf(key) { return (key === 'rain' || key === 'thunder') ? 'rain' : key === 'snow' ? 'snow' : key === 'aurora' ? 'snow' : null; }
   function ambEnsure(kind) {
     if (AMB[kind]) return AMB[kind];
     var ACc = AC || ((window.AudioContext || window.webkitAudioContext) && new (window.AudioContext || window.webkitAudioContext)());
@@ -189,20 +192,38 @@
       ambC: 0xcfe0ff, ambI: 0.34, hemiI: 0.45,
       dirC: 0xdfeeff, dirI: 0.62, dirH: 0.4,
       glowC: 0xbfe3ff, glowI: 0.35,
-      starO: 0.8, dustO: 0.55, dustS: 0.55, aurA: 0, aurSp: 0,
+      starO: 0.8, dustO: 0.55, dustS: 0.55, aurA: 0, aurSp: 0, boltA: 0,
       rainA: 0, snowA: 1, fox: 'pc', foxS: 0.7
+    },
+    /* v7 新增第 6 种天气：雷暴（闪电 + 暴雨 + 低频轰鸣，与雨夜明显区分） */
+    thunder: {
+      name: '雷暴', ico: '⛈️',
+      skyTop: 0x05070f, skyBot: 0x1b2140, fog: 0x0a1020, fogD: 0.115,
+      ambC: 0x6f7dff, ambI: 0.16, hemiI: 0.24,
+      dirC: 0x8fa6ff, dirI: 0.3, dirH: 0.16,
+      glowC: 0x8f6cff, glowI: 0.42,
+      starO: 1, dustO: 0.42, dustS: 2.6, aurA: 0, aurSp: 0, boltA: 1,
+      rainA: 1, snowA: 0, fox: 'dribble', foxS: 0.5
     },
     aurora: {
       name: '极光', ico: '🌌',
-      skyTop: 0x061024, skyBot: 0x1d3a34, fog: 0x0d2030, fogD: 0.035,
-      ambC: 0x86ffc8, ambI: 0.3, hemiI: 0.42,
-      dirC: 0x9ef6d0, dirI: 0.45, dirH: 0.3,
-      glowC: 0x56e0a0, glowI: 0.6,
-      starO: 0.95, dustO: 0.7, dustS: 0.7, aurA: 1, aurSp: 1,
+      skyTop: 0x040c1e, skyBot: 0x0f2a2e, fog: 0x0a1f26, fogD: 0.032,
+      ambC: 0x86ffc8, ambI: 0.34, hemiI: 0.46,
+      dirC: 0x9ef6d0, dirI: 0.5, dirH: 0.3,
+      glowC: 0x56e0a0, glowI: 0.66,
+      starO: 1, dustO: 0.78, dustS: 0.62, aurA: 1, aurSp: 1, boltA: 0,
       rainA: 0, snowA: 0, fox: 'idle', foxS: 0.9
     }
   };
-  var WEATHER_ORDER = ['sunny', 'cloudy', 'rain', 'snow', 'aurora'];
+  var WEATHER_ORDER = ['sunny', 'cloudy', 'rain', 'thunder', 'snow', 'aurora'];
+  var WEATHER_TIPS = {
+    sunny: '暖金直射光 · 粒子稀疏慢速',
+    cloudy: '柔光漫射 · 看山托腮打盹',
+    rain: '冷蓝紫 · 雨丝密集下落',
+    thunder: '压暗长空 · 闪电劈落 + 低频轰鸣',
+    snow: '冷白漫射 · 雪花缓缓飘落',
+    aurora: '高分辨率极光帘幕 · 多层流动 + 地面反光'
+  };
   var WEATHER_STORE_KEY = 'weather';
   /* B2：手动天气优先 —— followLive=true 时跟随后端 WS 推送；手动点过天气按钮后进入手动模式 */
   var followLive = storeGet('followLive', true);
@@ -226,7 +247,8 @@
     skyTop: null, skyBot: null, fogC: null, fogD: 0.05,
     ambC: null, ambI: 0, hemiI: 0, dirC: null, dirI: 0, dirH: 0,
     glowC: null, glowI: 0, starO: 0, dustO: 0, dustS: 1,
-    aurA: 0, aurSp: 0, rainA: 0, snowA: 0,
+    aurA: 0, aurSp: 0, rainA: 0, snowA: 0, boltA: 0,
+    flash: 0,
     cur: null, foxGif: 'wave', foxS: 1
   };
   // 平滑因子：tau≈0.5 → ~1.5s 到 95%
@@ -267,7 +289,8 @@
       glowC: hexC(w.glowC), glowI: w.glowI,
       starO: clamp(w.starO * (k > 0.9 ? 1 : 2.2 - 1.2 * k), 0, 1),
       dustO: w.dustO, dustS: w.dustS,
-      aurA: w.aurA, aurSp: w.aurSp, rainA: w.rainA, snowA: w.snowA
+      aurA: w.aurA, aurSp: w.aurSp, rainA: w.rainA, snowA: w.snowA,
+      boltA: w.boltA || 0, flash: 0
     };
     // 设计稿 v2：白天场景加深 —— 深紫金渐变保住宇宙感，星点/远景星补偿提亮
     if (todKey === 'day') {
@@ -290,6 +313,7 @@
     c.dustO = lv(c.dustO, t.dustO); c.dustS = lv(c.dustS, t.dustS);
     c.aurA = lv(c.aurA, t.aurA); c.aurSp = lv(c.aurSp, t.aurSp);
     c.rainA = lv(c.rainA, t.rainA); c.snowA = lv(c.snowA, t.snowA);
+    c.boltA = lv(c.boltA, t.boltA);
   }
   function applyEnv() {
     var c = ENV.cur;
@@ -308,10 +332,34 @@
     dustMat.opacity = c.dustO;
     if (farStarsMat) farStarsMat.opacity = c.starO * 0.85;
     // 天气开关按阈值淡入
-    var rOn = c.rainA > 0.03, sOn = c.snowA > 0.03, aOn = c.aurA > 0.03;
+    var rOn = c.rainA > 0.03, sOn = c.snowA > 0.03, aOn = c.aurA > 0.03, bOn = c.boltA > 0.03;
     if (rainMesh) rainMesh.visible = rOn;
     if (snowMesh) snowMesh.visible = sOn;
-    if (auroraMesh) { auroraMesh.visible = aOn; if (aOn) auroraMesh.material.uniforms.uOp.value = c.aurA; }
+    if (auroraMesh) {
+      auroraMesh.visible = aOn;
+      for (var aI = 0; aI < auroraLayers.length; aI++) {
+        var al = auroraLayers[aI];
+        al.mesh.visible = aOn;
+        if (aOn) {
+          al.mesh.material.uniforms.uOp.value = c.aurA * al.op;
+          al.mesh.material.uniforms.uSpeed.value = 0.18 + 0.42 * c.aurSp;
+        }
+      }
+      if (auroraGround) { auroraGround.visible = aOn; auroraGround.material.opacity = 0.30 * c.aurA; }
+    }
+    if (boltMesh) boltMesh.visible = bOn;
+    // v7：电影级后处理参数随天气/时段联动（极光时提高通透度与饱和，雷暴时压暗并加强颗粒）
+    if (postMat) {
+      var u = postMat.uniforms;
+      u.uTime.value = eTimeCache;
+      u.uAurora.value = c.aurA;
+      u.uBolt.value = c.boltA;
+      u.uFlash.value = ENV.flash;
+      u.uSat.value = 1.06 + 0.16 * c.aurA - 0.06 * (c.boltA || 0);
+      u.uVig.value = 0.34 + 0.12 * (c.boltA || 0);
+      u.uGrain.value = 0.030 + 0.020 * (c.boltA || 0);
+      u.uGlass.value = 0.55 + 0.35 * c.aurA;
+    }
   }
 
   /* ================================================================
@@ -322,6 +370,14 @@
   var dustGeo, dustMat, dustPts;
   var farStarsMat, farStars;
   var rainMesh, snowMesh, auroraMesh;
+  var auroraLayers = [];      // v7：极光多层帘幕（主帘 + 次帘 + 远景辉光）
+  var auroraGround = null;    // v7：极光地面反光
+  var boltMesh = null;        // v7：雷暴闪电
+  var boltPts = null, boltSeed = 0, boltNext = 0, boltLife = 0;
+  /* v7 电影级后处理 */
+  var postScene = null, postCam = null, postMat = null, postRT = null, postOK = false;
+  var SS = 1, ssWant = 1;
+  var eTimeCache = 0;
   var foxAnchor;
   var rings = [];
   var stars = [];   // {id, group, mesh, mat, glow, label, base:[x,y,z], r, data}
@@ -626,7 +682,13 @@
     // 雨（短线）与雪（点）
     rainMesh = buildRain();
     snowMesh = buildSnow();
+    // v7：极光改为多层高分辨率帘幕（主帘 / 次帘 / 远景辉光 + 地面反光）
     auroraMesh = buildAurora();
+    auroraGround = buildAuroraGround();
+    // v7：雷暴闪电
+    boltMesh = buildBolt();
+    // v7：电影级后处理（超采样 + 调色 + 胶片颗粒 + 玻璃液膜折射）
+    buildPost(vw, vh);
 
     // 轨道环
     var ringColors = [0x7c5cff, 0x0f88eb, 0xff9a3c];
@@ -644,9 +706,9 @@
 
     // 批次0·熔炉核心：中央 3D 炼金炉移除，炉火改为屏幕底部 CSS 熔炉（#uniHearth，JS 注入），群星在其上空运转
 
-    // 看山锚点（DOM 投影用）
+    // 看山锚点（保留给外部调试引用；v7 起看山改为 DOM 固定安全角，不再投影到星海中央）
     foxAnchor = new T.Object3D();
-    foxAnchor.position.set(3.1, 0.4, 1.8);
+    foxAnchor.position.set(-11.5, -3.4, 9);
     scene.add(foxAnchor);
 
     // 星体 + 链路
@@ -688,31 +750,267 @@
     scene.add(mesh);
     return mesh;
   }
-  function buildAurora() {
-    var g = new T.PlaneGeometry(46, 15, 90, 26);
-    g.rotateX(-Math.PI / 2.6);
+  /* ================================================================
+     v7 · 极光：多层高分辨率帘幕
+     为什么这样写：极光"像不像"取决于三件事 ——
+       ① 帘幕的竖向丝状结构（ray structure，不是平滑色块）
+       ② 沿帘幕横向的流动与呼吸（真实极光是流动的，不是静态贴图）
+       ③ 分层景深（前景帘幕清晰、远景辉光弥散）+ 地面反光
+     所以这里的做法是：高分段几何（240×96，单帘约 2.3 万顶点）承托
+     逐顶点位移，片元里用 3D value-noise 的 fbm 生成丝状 rays，
+     再用时间驱动的相位让帘幕流动；三层不同速度/色相叠出景深。
+     ================================================================ */
+  var AURORA_NOISE_GLSL = [
+    'vec3 rkHash3(vec3 p){ p = vec3(dot(p,vec3(127.1,311.7,74.7)), dot(p,vec3(269.5,183.3,246.1)), dot(p,vec3(113.5,271.9,124.6))); return -1.0+2.0*fract(sin(p)*43758.5453123); }',
+    'float rkNoise(vec3 p){ vec3 i=floor(p); vec3 f=fract(p); vec3 u=f*f*(3.0-2.0*f);',
+    '  return mix(mix(mix(dot(rkHash3(i+vec3(0,0,0)),f-vec3(0,0,0)),dot(rkHash3(i+vec3(1,0,0)),f-vec3(1,0,0)),u.x),',
+    '             mix(dot(rkHash3(i+vec3(0,1,0)),f-vec3(0,1,0)),dot(rkHash3(i+vec3(1,1,0)),f-vec3(1,1,0)),u.x),u.y),',
+    '         mix(mix(dot(rkHash3(i+vec3(0,0,1)),f-vec3(0,0,1)),dot(rkHash3(i+vec3(1,0,1)),f-vec3(1,0,1)),u.x),',
+    '             mix(dot(rkHash3(i+vec3(0,1,1)),f-vec3(0,1,1)),dot(rkHash3(i+vec3(1,1,1)),f-vec3(1,1,1)),u.x),u.y),u.z); }',
+    'float rkFbm(vec3 p){ float s=0.0,a=0.5; for(int i=0;i<5;i++){ s+=a*rkNoise(p); p*=2.03; a*=0.5; } return s; }'
+  ].join('\n')
+
+  var AURORA_VERT = [
+    'uniform float uT; uniform float uSpeed; uniform float uAmp; uniform float uLayer;',
+    'varying vec2 vUv; varying float vH; varying float vFlow; varying vec3 vW;',
+    AURORA_NOISE_GLSL,
+    'void main(){',
+    '  vUv = uv; vec3 p = position;',
+    '  float t = uT * uSpeed;',
+    /* 横向大波浪：把平面推成真的有起伏的帘幕 */
+    '  float big = rkFbm(vec3(uv.x*2.6, uv.y*0.7, t*0.11));',
+    '  p.z += big * uAmp * (0.35 + 0.65*sin(uv.y*3.14159));',
+    '  p.x += sin(uv.y*5.2 + t*0.35 + uLayer*1.7) * 0.55;',
+    /* 竖向细褶：让帘幕表面有"被风吹皱"的丝状凹凸 */
+    '  float fold = rkFbm(vec3(uv.x*13.0, uv.y*2.1 + t*0.28, t*0.07));',
+    '  p.z += fold * uAmp * 0.42;',
+    '  p.y += sin(uv.x*3.3 + t*0.24 + uLayer) * 0.75 * (0.2+0.8*uv.y);',
+    '  vH = uv.y; vFlow = fold;',
+    '  vec4 w = modelMatrix * vec4(p,1.0); vW = w.xyz;',
+    '  gl_Position = projectionMatrix * viewMatrix * w;',
+    '}'
+  ].join('\n')
+
+  var AURORA_FRAG = [
+    'uniform float uOp; uniform float uT; uniform float uSpeed; uniform float uLayer; uniform vec3 uColA; uniform vec3 uColB; uniform vec3 uColC;',
+    'varying vec2 vUv; varying float vH; varying float vFlow; varying vec3 vW;',
+    AURORA_NOISE_GLSL,
+    'void main(){',
+    '  float t = uT * uSpeed;',
+    /* ① 竖向丝状 rays：强各向异性 noise（x 方向高频、y 方向低频）*/
+    '  float rays  = rkFbm(vec3(vUv.x*26.0, vUv.y*1.5, t*0.30));',
+    '  float rays2 = rkFbm(vec3(vUv.x*9.0,  vUv.y*0.9, t*0.18 + 7.0));',
+    '  float stri  = smoothstep(-0.15, 0.85, rays*0.72 + rays2*0.55);',
+    /* ② 帘幕主弧带：真实的极光是一条亮弧，向下渐渐拉成丝 */
+    '  float arc  = 1.0 - abs(fract(vUv.y*1.0 + rays2*0.10) - 0.62)*1.55;',
+    '  float band = pow(clamp(arc,0.0,1.0), 2.1);',
+    /* ③ 顶部收口 + 底部拉长（丝脚）*/
+    '  float top   = smoothstep(1.02, 0.30, vH);',
+    '  float feet  = smoothstep(0.0, 0.62, vH);',
+    '  float body  = band * (0.30 + 0.70*feet) * (0.35 + 0.65*top);',
+    /* ④ 呼吸与流动（真实极光亮度是脉动的）*/
+    '  float breath = 0.72 + 0.28*sin(t*0.55 + vUv.x*5.0 + uLayer*2.0);',
+    '  float travel = 0.80 + 0.20*smoothstep(0.0,1.0, sin(t*0.22 - vUv.x*3.4)*0.5+0.5);',
+    /* ⑤ 颜色：底部青绿 → 中部翠绿 → 顶部品红/紫，真实极光的典型色阶 */
+    '  vec3 cGreen = uColA; vec3 cCyan = uColB; vec3 cViolet = uColC;',
+    '  vec3 col = mix(cGreen, cCyan, smoothstep(0.22, 0.72, vH + rays*0.16));',
+    '  col = mix(col, cViolet, smoothstep(0.62, 1.02, vH + rays2*0.12) * 0.85);',
+    '  col += cCyan * pow(stri, 3.0) * 0.75;',
+    /* ⑥ 丝状亮线：极光最抓人的"垂帘"细节 */
+    '  float line = pow(max(0.0, stri - 0.52), 1.7) * 3.4;',
+    '  col += vec3(0.55, 1.0, 0.80) * line * 0.55;',
+    '  float a = uOp * clamp(body*(0.42 + 0.85*stri), 0.0, 1.0) * breath * travel;',
+    '  a *= mix(1.0, 0.55, uLayer*0.5);',
+    '  a = clamp(a, 0.0, 1.0);',
+    '  gl_FragColor = vec4(col * (0.75 + 0.65*stri) * a, a);',
+    '}'
+  ].join('\n')
+
+  function buildAuroraLayer(w, h, segX, segY, layer, amp, op, colorA, colorB, colorC, tilt, pos) {
+    var g = new T.PlaneGeometry(w, h, segX, segY)
+    g.rotateX(-tilt)
     var m = new T.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: T.AdditiveBlending,
-      uniforms: { uOp: { value: 1 }, uT: { value: 0 } },
-      vertexShader: [
-        'uniform float uT; varying vec2 vUv; varying float vH;',
-        'void main(){ vUv = uv; vec3 p = position; float w = sin(uv.x*6.2831+uT*0.9)*1.4 + sin(uv.x*3.1416*2.0+uT*1.7)*0.7;',
-        'p.z += w*(0.5+0.5*sin(uv.y*3.1416)); p.y += sin(uv.x*3.1416*2.0+uT*0.5)*1.0;',
-        'vH = uv.y; gl_Position = projectionMatrix*modelViewMatrix*vec4(p,1.0); }'
-      ].join('\n'),
-      fragmentShader: [
-        'uniform float uOp; uniform float uT; varying vec2 vUv; varying float vH;',
-        'void main(){ float band = sin(vUv.x*3.1416*7.0+uT*1.3)*0.5+0.5; float base = (1.0-vH)*0.85;',
-        'vec3 g1 = vec3(0.18,1.0,0.55); vec3 g2 = vec3(0.45,0.4,1.0);',
-        'vec3 c = mix(g1,g2,smoothstep(0.25,0.8,band)); c += vec3(0.2,0.7,0.5)*(band*0.4);',
-        'float a = uOp*clamp(base*0.35 + band*0.4, 0.0, 1.0); gl_FragColor = vec4(c*a, a); }'
-      ].join('\n')
-    });
-    var mesh = new T.Mesh(g, m);
-    mesh.position.set(0, 6.5, -6);
-    mesh.visible = false;
-    scene.add(mesh);
-    return mesh;
+      transparent: true, depthWrite: false, depthTest: false,
+      blending: T.AdditiveBlending, side: T.DoubleSide,
+      uniforms: {
+        uOp: { value: 1 }, uT: { value: 0 }, uSpeed: { value: 0.3 }, uAmp: { value: amp },
+        uLayer: { value: layer },
+        uColA: { value: new T.Color(colorA) }, uColB: { value: new T.Color(colorB) }, uColC: { value: new T.Color(colorC) }
+      },
+      vertexShader: AURORA_VERT, fragmentShader: AURORA_FRAG
+    })
+    var mesh = new T.Mesh(g, m)
+    mesh.position.set(pos[0], pos[1], pos[2])
+    mesh.rotation.y = pos[3] || 0
+    mesh.visible = false
+    mesh.renderOrder = -1 + layer
+    scene.add(mesh)
+    var ent = { mesh: mesh, op: op, layer: layer }
+    auroraLayers.push(ent)
+    return mesh
+  }
+  function buildAurora() {
+    auroraLayers = []
+    /* 主帘：高分段、强位移、最亮（这是"超高像素"的几何底座） */
+    var main = buildAuroraLayer(76, 26, 240, 96, 0, 2.9, 1.0, 0x2bff8c, 0x4dfff0, 0xb46cff, Math.PI / 2.55, [0, 8.2, -7, 0])
+    /* 次帘：偏低偏暗，速度不同 → 产生前后景深与"两层流动" */
+    buildAuroraLayer(92, 30, 160, 64, 1, 3.6, 0.62, 0x1fd97a, 0x39e0ff, 0x9a5cff, Math.PI / 2.5, [0, 6.0, -13, 0])
+    /* 远景辉光：极弥散的紫绿光雾，垫在最后面 */
+    buildAuroraLayer(120, 38, 96, 40, 2, 4.4, 0.32, 0x2ad07a, 0x66d9ff, 0x8f6cff, Math.PI / 2.62, [0, 5.0, -20, 0])
+    return main
+  }
+  /* 极光地面反光：地平线附近的一层绿光，让极光"踩在地上" */
+  function buildAuroraGround() {
+    var g = new T.PlaneGeometry(120, 46)
+    g.rotateX(-Math.PI / 2)
+    var m = new T.MeshBasicMaterial({
+      color: 0x39ffa8, transparent: true, opacity: 0,
+      blending: T.AdditiveBlending, depthWrite: false, depthTest: false
+    })
+    var mesh = new T.Mesh(g, m)
+    mesh.position.set(0, -9.6, -4)
+    mesh.visible = false
+    scene.add(mesh)
+    return mesh
+  }
+
+  /* ---------- 雷暴闪电（v7 第 6 种天气）----------
+     一条随时间随机重生的折线 + 分叉，配合后处理里的全屏闪光 uFlash */
+  function buildBolt() {
+    var seg = 26
+    var g = new T.BufferGeometry()
+    boltPts = new Float32Array(seg * 3)
+    g.setAttribute('position', new T.BufferAttribute(boltPts, 3))
+    var m = new T.LineBasicMaterial({ color: 0xdff0ff, transparent: true, opacity: 0.95, blending: T.AdditiveBlending, depthWrite: false, depthTest: false })
+    var mesh = new T.Line(g, m)
+    mesh.visible = false
+    mesh.renderOrder = 3
+    scene.add(mesh)
+    boltNext = 1.4 + Math.random() * 2.2
+    return mesh
+  }
+  function strikeBolt() {
+    if (!boltMesh || !boltPts) return
+    var seg = boltPts.length / 3
+    var x0 = -26 + Math.random() * 52
+    var y0 = 26 + Math.random() * 8
+    var z0 = -16 + Math.random() * 16
+    var x1 = x0 + (-10 + Math.random() * 20)
+    var z1 = z0 + (-6 + Math.random() * 12)
+    for (var i = 0; i < seg; i++) {
+      var k = i / (seg - 1)
+      var jitter = (1 - Math.abs(k - 0.5) * 1.4) * (Math.random() - 0.5) * 7
+      boltPts[i * 3] = x0 + (x1 - x0) * k + jitter
+      boltPts[i * 3 + 1] = y0 + (-34 - Math.random() * 4) * k
+      boltPts[i * 3 + 2] = z0 + (z1 - z0) * k + jitter * 0.45
+    }
+    boltMesh.geometry.attributes.position.needsUpdate = true
+    boltMesh.geometry.computeBoundingSphere && boltMesh.geometry.computeBoundingSphere()
+    boltMesh.material.opacity = 0.95
+    boltLife = 0.42
+    ENV.flash = 1
+    try { uniSfx('thunder') } catch (e) { }
+  }
+
+  /* ================================================================
+     v7 · 电影级后处理
+     一次绘制到超采样 RenderTarget，再用全屏 quad 做：
+       桶形畸变（玻璃液态折射）+ 边缘色散 + 高光泛光近似 +
+       ACES 曲线 + 饱和/对比调色 + 暗角 + 胶片颗粒 + 液膜流动高光
+     失败（老显卡 / 显存不足）时自动降级为直出渲染，绝不影响可用性。
+     ================================================================ */
+  var POST_VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }'
+  var POST_FRAG = [
+    'precision highp float;',
+    'uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uTime;',
+    'uniform float uVig; uniform float uGrain; uniform float uSat; uniform float uAurora; uniform float uBolt; uniform float uFlash; uniform float uGlass;',
+    'varying vec2 vUv;',
+    'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }',
+    'vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }',
+    'void main(){',
+    '  vec2 uv = vUv;',
+    '  vec2 c = uv - 0.5;',
+    '  float r2 = dot(c,c);',
+    /* 桶形畸变 + 极光时增强的"玻璃液膜"波动（画面像隔着一层液态玻璃）*/
+    '  float wob = sin(uv.y*13.0 + uTime*0.42)*0.0016 + sin(uv.x*9.0 - uTime*0.33)*0.0013;',
+    '  uv = 0.5 + c * (1.0 + 0.030*r2) + c * wob * uGlass;',
+    /* 边缘色散（镜头感）*/
+    '  float ab = (0.0016 + 0.0042*r2) * (0.7 + 0.6*uBolt);',
+    '  vec2 dir = normalize(c + 1e-6);',
+    '  vec3 col;',
+    '  col.r = texture2D(tDiffuse, uv + dir*ab).r;',
+    '  col.g = texture2D(tDiffuse, uv).g;',
+    '  col.b = texture2D(tDiffuse, uv - dir*ab).b;',
+    /* 高光泛光近似：绕一圈取样取亮部，做出极光/炉火的光晕 */
+    '  vec3 bl = vec3(0.0);',
+    '  float rad = 0.006 + 0.004*uAurora;',
+    '  for (int i=0;i<8;i++){',
+    '    float a = 6.2831853 * float(i) / 8.0;',
+    '    vec3 s = texture2D(tDiffuse, uv + vec2(cos(a), sin(a))*rad).rgb;',
+    '    bl += max(s - 0.62, 0.0);',
+    '  }',
+    '  col += bl * (0.34 + 0.30*uAurora);',
+    /* 闪电全屏闪光 */
+    '  col += vec3(0.72,0.82,1.0) * uFlash * (0.20 + 0.42*(1.0 - r2));',
+    /* 调色：ACES + 饱和 + 轻微冷暗部/暖高光分离 */
+    '  col = aces(col * 1.06);',
+    '  float lum = dot(col, vec3(0.2126,0.7152,0.0722));',
+    '  col = mix(vec3(lum), col, uSat);',
+    '  col *= mix(vec3(0.97,0.99,1.06), vec3(1.04,1.00,0.94), smoothstep(0.35,1.0,lum));',
+    /* 暗角 */
+    '  col *= 1.0 - uVig * smoothstep(0.22, 0.92, r2*1.35);',
+    /* 胶片颗粒（极光时减弱，保持通透）*/
+    '  float g = hash(uv*uRes + fract(uTime)*137.0) - 0.5;',
+    '  col += g * uGrain * (1.0 - 0.45*uAurora);',
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'
+  ].join('\n')
+  function makeRT(w, h, scale) {
+    var rtw = Math.max(2, Math.floor(w * scale))
+    var rth = Math.max(2, Math.floor(h * scale))
+    var opt = { minFilter: T.LinearFilter, magFilter: T.LinearFilter, depthBuffer: true, stencilBuffer: false }
+    var rt = new T.WebGLRenderTarget(rtw, rth, opt)
+    return rt
+  }
+  function buildPost(vw, vh) {
+    try {
+      postScene = new T.Scene()
+      postCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+      postMat = new T.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: null }, uRes: { value: new T.Vector2(vw, vh) }, uTime: { value: 0 },
+          uVig: { value: 0.36 }, uGrain: { value: 0.032 }, uSat: { value: 1.08 },
+          uAurora: { value: 0 }, uBolt: { value: 0 }, uFlash: { value: 0 }, uGlass: { value: 0.6 }
+        },
+        vertexShader: POST_VERT, fragmentShader: POST_FRAG, depthTest: false, depthWrite: false
+      })
+      postRT = makeRT(vw, vh, SS)
+      postScene.add(new T.Mesh(new T.PlaneGeometry(2, 2), postMat))
+      postOK = true
+    } catch (e) {
+      postOK = false
+      postMat = null
+    }
+  }
+  function setSuperSample(k) {
+    ssWant = k
+    if (!postOK || !postRT) return
+    if (Math.abs(SS - k) < 0.01) return
+    SS = k
+    try {
+      var el = byId('uniCanvas')
+      var w = el.clientWidth || window.innerWidth, h = el.clientHeight || window.innerHeight
+      postRT.dispose()
+      postRT = makeRT(w, h, SS)
+      if (postMat) postMat.uniforms.uRes.value.set(w, h)
+    } catch (e) { }
+  }
+  function resizePost(w, h) {
+    if (!postOK || !postRT) return
+    try {
+      postRT.setSize(Math.max(2, Math.floor(w * SS)), Math.max(2, Math.floor(h * SS)))
+      if (postMat) postMat.uniforms.uRes.value.set(w, h)
+    } catch (e) { }
   }
 
   /* ---------- 星体 ---------- */
@@ -1158,21 +1456,135 @@
     if (!focusP) focusP = new T.Vector3(0, 2.6, 0);
   }
 
-  /* ---------------- DOM 看山投影 ---------------- */
+  /* ---------------- 看山（v7：固定安全角 + 卡通化 + 可拖拽） ----------------
+     旧实现把看山投影到 3D 锚点（星海中央偏右），会挡住用户视野。
+     新实现：DOM 固定停靠在"左下安全区"（避开顶部天气带、底部熔炉光心、右侧面板），
+     每帧只做幂等校验（已停靠则立即 return），不再做矩阵投影。 */
+  var foxDock = { side: 'bl', x: 22, y: 96, min: false, hidden: false, docked: false };
+  try { var _fd = loadLS('rkUni6', null); if (_fd && _fd.foxDock) foxDock = Object.assign(foxDock, _fd.foxDock); } catch (e) { }
+  function foxSaveDock() {
+    try { var u = loadLS('rkUni6', {}) || {}; u.foxDock = { side: foxDock.side, x: foxDock.x, y: foxDock.y, min: foxDock.min, hidden: foxDock.hidden }; saveLS('rkUni6', u); } catch (e) { }
+  }
+  /* 安全区计算：右侧有面板时往左让开，底部避开熔炉中央光心，移动端整体收进可视区 */
+  function foxSafeRect() {
+    var el = byId('uniCanvas') || byId('uniShell');
+    var W = el.clientWidth || window.innerWidth;
+    var H = el.clientHeight || window.innerHeight;
+    var rightPad = 0;
+    var aiOpen = byId('uniAiPanel') && byId('uniAiPanel').classList.contains('on');
+    var hotOpen = byId('uniHotPanel') && byId('uniHotPanel').classList.contains('on');
+    var knowOpen = byId('uniKnowPanel') && byId('uniKnowPanel').classList.contains('on');
+    var cardOpen = byId('uniCard') && byId('uniCard').classList.contains('on');
+    if (aiOpen || hotOpen || knowOpen) rightPad = Math.min(392, W * 0.94) + 22;
+    else if (cardOpen) rightPad = Math.min(360, W * 0.9) + 22;
+    return { W: W, H: H, rightPad: rightPad }
+  }
+  function placeFox() {
+    var el = byId('uniFox');
+    if (!el) return;
+    if (foxDock.hidden) { el.classList.remove('show'); return; }
+    var r = foxSafeRect();
+    var size = foxDock.min ? 56 : (W_bigFox() ? 100 : 76);
+    var x = foxDock.x, y = foxDock.y;
+    if (foxDock.side === 'br') x = r.W - x - size;
+    if (foxDock.side === 'tl') y = r.H - y - size;
+    if (foxDock.side === 'tr') { x = r.W - x - size; y = r.H - y - size; }
+    /* 右侧让位：任何靠右的停靠都必须在面板左侧 */
+    if (foxDock.side === 'br' || foxDock.side === 'tr') x = Math.min(x, r.W - r.rightPad - size - 8);
+    /* 左侧停靠时，如果右侧面板展开且屏幕很窄，则再往左收一点 */
+    if (r.rightPad && x + size > r.W - r.rightPad - 8) x = Math.max(8, r.W - r.rightPad - size - 8);
+    x = clamp(x, 6, Math.max(6, r.W - size - 6));
+    y = clamp(y, 6, Math.max(6, r.H - size - 6));
+    el.style.left = Math.round(x) + 'px';
+    el.style.bottom = Math.round(y) + 'px';
+    el.style.right = 'auto';
+    el.style.top = 'auto';
+    el.classList.add('show');
+    el.classList.toggle('min', !!foxDock.min);
+    foxDock.docked = true;
+  }
+  function W_bigFox() { return byId('uniFox') && byId('uniFox').classList.contains('big'); }
   function projectFox() {
-    var el = byId('uniFox'); if (!el || !active) return;
-    var v = new T.Vector3();
-    foxAnchor.getWorldPosition(v);
-    v.project(camera);
-    if (v.z > 1) { el.style.display = 'none'; return; }
-    var elC = byId('uniCanvas');
-    var x = (v.x * 0.5 + 0.5) * elC.clientWidth;
-    var y = (-v.y * 0.5 + 0.5) * elC.clientHeight;
-    el.style.display = 'block';
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    // 兜底：太靠屏幕下方则贴地
-    if (y > elC.clientHeight - 70) el.style.top = (elC.clientHeight - 70) + 'px';
+    /* 名字沿用（tick 里调用）：实质是"停靠校验"，已停靠则几乎零开销 */
+    var el = byId('uniFox');
+    if (!el) return;
+    if (!foxDock.docked || foxDock.needReposition) { foxDock.needReposition = false; placeFox(); }
+    else if (!foxDock.hidden && !el.classList.contains('show')) el.classList.add('show');
+  }
+  function foxHop() {
+    var el = byId('uniFox'); if (!el) return;
+    el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop');
+    setTimeout(function () { el.classList.remove('hop'); }, 700);
+  }
+  function foxSpin() {
+    var el = byId('uniFox'); if (!el) return;
+    el.classList.remove('spin'); void el.offsetWidth; el.classList.add('spin');
+    setTimeout(function () { el.classList.remove('spin'); }, 850);
+  }
+  function bindFoxTools() {
+    var el = byId('uniFox'); if (!el || el.__bound) return;
+    el.__bound = true;
+    /* 工具条 */
+    var box = el.querySelector('.foxtools');
+    if (box) box.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('button[data-foxtool]') : null;
+      if (!b) return;
+      e.stopPropagation();
+      var t = b.getAttribute('data-foxtool');
+      if (t === 'hop') { foxHop(); foxSay('<b>🦊 看山：</b>我跳！跳一跳更有精神 😆', 2200); }
+      else if (t === 'min') { foxDock.min = !foxDock.min; foxDock.needReposition = true; foxSaveDock(); placeFox(); }
+      else if (t === 'dock') { foxDock.side = 'bl'; foxDock.x = 22; foxDock.y = 96; foxDock.min = false; foxDock.hidden = false; foxDock.needReposition = true; foxSaveDock(); placeFox(); toastU('看山已回到左下角 📌', 1); }
+      else if (t === 'hide') { foxDock.hidden = true; foxSaveDock(); placeFox(); toastU('看山先躲起来啦，点「🤖 AI · 热聊」面板里的 🦊 可以召回', 0); }
+    });
+    /* 拖拽换位置：松手后自动吸附到最近的角，且始终留在安全区 */
+    var dragging = null;
+    var wrap = el.querySelector('.foxwrap') || el;
+    wrap.addEventListener('pointerdown', function (e) {
+      if (e.target.closest && e.target.closest('.foxtools')) return;
+      dragging = { sx: e.clientX, sy: e.clientY, ox: 0, oy: 0, moved: 0 };
+      var rect = el.getBoundingClientRect();
+      dragging.ox = rect.left; dragging.oy = window.innerHeight - rect.bottom;
+      try { wrap.setPointerCapture(e.pointerId) } catch (err) { }
+    });
+    wrap.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - dragging.sx, dy = e.clientY - dragging.sy;
+      dragging.moved = Math.max(dragging.moved, Math.abs(dx) + Math.abs(dy));
+      if (dragging.moved < 6) return;
+      var r = foxSafeRect();
+      var size = foxDock.min ? 56 : 76;
+      var nx = clamp(dragging.ox + dx, 6, Math.max(6, r.W - size - 6));
+      var ny = clamp(dragging.oy - dy, 6, Math.max(6, r.H - size - 6));
+      el.style.left = Math.round(nx) + 'px'; el.style.bottom = Math.round(ny) + 'px';
+      el.style.right = 'auto'; el.style.top = 'auto';
+      el.style.transition = 'none';
+    });
+    function endDrag(e) {
+      if (!dragging) return;
+      var moved = dragging.moved; dragging = null;
+      el.style.transition = '';
+      if (moved < 6) return; // 没移动 = 点击
+      var r = foxSafeRect();
+      var rect = el.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      foxDock.side = (cx < r.W / 2 ? 'bl' : 'br');
+      if (cy < r.H / 2) foxDock.side = foxDock.side === 'bl' ? 'tl' : 'tr';
+      foxDock.x = foxDock.side === 'bl' || foxDock.side === 'tl' ? clamp(rect.left, 10, 260) : clamp(r.W - rect.right, 10, 260);
+      foxDock.y = foxDock.side === 'bl' || foxDock.side === 'br' ? clamp(r.H - rect.bottom, 10, 320) : clamp(rect.top, 10, 320);
+      foxDock.needReposition = true; foxSaveDock();
+      foxSpin();
+      setTimeout(placeFox, 10);
+    }
+    wrap.addEventListener('pointerup', endDrag);
+    wrap.addEventListener('pointercancel', endDrag);
+  }
+  /* 随机可爱小动作（每隔一段时间自己玩一下，增强"卡通感"） */
+  var foxPlayT = 0;
+  function foxPlayTick(t) {
+    if (foxDock.hidden) return;
+    if (t - foxPlayT < 16) return;
+    foxPlayT = t;
+    if (Math.random() < 0.55) foxHop(); else foxSpin();
   }
   function foxGif(name) {
     var img = byId('uniFoxImg');
@@ -1186,8 +1598,10 @@
     if (!b) return;
     b.innerHTML = html;
     b.classList.add('show');
-    byId('uniFox').classList.add('big');
-    if (ms) { clearTimeout(foxSayT); foxSayT = setTimeout(function () { b.classList.remove('show'); byId('uniFox').classList.remove('big'); }, ms); }
+    var f = byId('uniFox');
+    if (f) { f.classList.add('big'); foxDock.needReposition = true; }
+    foxPlayT = eTimeCache; // 说话期间不叠加随机小动作
+    if (ms) { clearTimeout(foxSayT); foxSayT = setTimeout(function () { b.classList.remove('show'); var ff = byId('uniFox'); if (ff) { ff.classList.remove('big'); foxDock.needReposition = true; } }, ms); }
   }
   var foxSayT = 0;
   function foxAutoTip() {
@@ -1213,7 +1627,7 @@
       b.className = 'wbtn' + (!followLive && k2 === curWeather ? ' on' : '');
       b.setAttribute('data-w', k2);
       b.innerHTML = '<span class="we">' + w.ico + '</span>' + w.name;
-      b.title = w.name + '：' + (k2 === 'sunny' ? '暖金直射光 · 粒子稀疏慢速' : k2 === 'cloudy' ? '柔光 · 看山托腮' : k2 === 'rain' ? '冷蓝紫 · 粒子密集下落' : k2 === 'snow' ? '冷白漫射 · 雪花飘落' : '绿紫极光带 · 看山仰望');
+      b.title = w.name + '：' + (WEATHER_TIPS[k2] || '');
       box.appendChild(b);
     }
     // B2：「跟随实时」开关（手动模式出口）——设计稿 v2：组尾小胶囊，绿点=推送中
@@ -1541,6 +1955,7 @@
   function showHot() {
     /* 与 showKnow 对称：打开热榜时收起已习得面板与星体卡，避免同位置叠加 */
     hideKnow(); closeCard();
+    try { hideAiPanel(); } catch (e) { } // v7：AI/热聊面板与热榜互斥
     byId('uniHotPanel').classList.add('on');
     byId('uniHotSrc').textContent = (curServer && curServer.live) ? '实时 · 后端推送' : '本地示例';
   }
@@ -1699,6 +2114,7 @@
   function overlayOpen() {
     return byId('uniReader').classList.contains('on')
       || byId('uniHotPanel').classList.contains('on')
+      || (byId('uniAiPanel') && byId('uniAiPanel').classList.contains('on'))
       || (byId('uniKnowPanel') && byId('uniKnowPanel').classList.contains('on'))
       || (byId('uniMind') && byId('uniMind').classList.contains('on'));
   }
@@ -1781,8 +2197,29 @@
     }
     // 雨 / 雪粒子
     updateRainSnow(dt, t3);
-    // 极光流动
-    if (auroraMesh.visible) { auroraMesh.material.uniforms.uT.value = t3 * (0.25 + 0.4 * ENV.cur.aurSp); auroraMesh.rotation.y = t3 * 0.02; }
+    // 极光流动（v7：三层分别推进时间与轻微姿态漂移，形成"真实流动感"）
+    if (auroraMesh && auroraMesh.visible) {
+      for (var aL = 0; aL < auroraLayers.length; aL++) {
+        var ent = auroraLayers[aL];
+        var um = ent.mesh.material.uniforms;
+        um.uT.value = t3;
+        ent.mesh.rotation.y = Math.sin(t3 * 0.035 + aL * 1.3) * 0.055 + aL * 0.012;
+        ent.mesh.position.x = Math.sin(t3 * 0.045 + aL) * 0.9;
+      }
+      if (auroraGround && auroraGround.material) auroraGround.material.opacity = 0.30 * ENV.cur.aurA * (0.82 + 0.18 * Math.sin(t3 * 0.7));
+    }
+    // v7：雷暴闪电（随机间隔劈落 + 全屏闪光衰减）
+    if (boltMesh && boltMesh.visible) {
+      if (boltLife > 0) {
+        boltLife -= dt;
+        boltMesh.material.opacity = Math.max(0, boltLife / 0.42);
+        if (boltLife <= 0) boltMesh.visible = false;
+      } else {
+        boltNext -= dt;
+        if (boltNext <= 0) { boltNext = 2.4 + Math.random() * 4.2; strikeBolt(); }
+      }
+    }
+    if (ENV.flash > 0) ENV.flash = Math.max(0, ENV.flash - dt * 3.4);
     // 星尘自转
     dustPts.rotation.y += dt * 0.012 * ENV.cur.dustS;
     dustPts.rotation.x = 0.14;
@@ -1793,14 +2230,33 @@
       if (camState.idle > 9) { camState.auto = true; camState.idle = 0; }
     } else if (drag || focus) { camState.idle = 0; }
     orbitUpdate(dt, t3);
-    // 看山（B6：阅读器打开时跳过投影，省一次矩阵开销）
-    if (!byId('uniReader').classList.contains('on')) projectFox();
+    // 看山（v7：改为 DOM 固定安全角；本项目每帧只做一次幂等校验，开销≈0）
+    projectFox();
+    foxPlayTick(t3);
     if (Math.floor(t3) % 14 === 0 && foxTipTick !== Math.floor(t3 / 14)) { foxTipTick = Math.floor(t3 / 14); if (!overlayOpen()) foxAutoTip(); }
     // 时钟
     paintClock();
+    eTimeCache = t3;
     // B6：覆盖层打开时仅每 5 帧渲染一次（≈12fps），其余逻辑照常
     frameNo++;
-    if (!overlayOpen() || frameNo % 5 === 0) { renderer.render(scene, camera); U.renders = (U.renders || 0) + 1; } // U.renders：B6 验收计数
+    if (!overlayOpen() || frameNo % 5 === 0) { renderFrame(); U.renders = (U.renders || 0) + 1; } // U.renders：B6 验收计数
+  }
+  /* v7：统一出图入口 —— 有后处理走"超采样 RT + 全屏调色"，否则直出（降级安全） */
+  function renderFrame() {
+    if (postOK && postRT && postMat && postScene && postCam) {
+      try {
+        renderer.setRenderTarget(postRT);
+        renderer.render(scene, camera);
+        renderer.setRenderTarget(null);
+        postMat.uniforms.tDiffuse.value = postRT.texture;
+        renderer.render(postScene, postCam);
+        return;
+      } catch (e) {
+        postOK = false; // 出错就永久降级到直出，避免每帧抛错
+        try { renderer.setRenderTarget(null); } catch (e2) { }
+      }
+    }
+    renderer.render(scene, camera);
   }
   var foxTipTick = -1;
   function updateRainSnow(dt, t3) {
@@ -1866,7 +2322,7 @@
       if (!payload) return;
       var cur = payload.weather || payload.env || {};
       if (cur.weather || cur.code) {
-        var map = { sunny: 'sunny', clear: 'sunny', cloudy: 'cloudy', overcast: 'cloudy', rain: 'rain', snow: 'snow', aurora: 'aurora' };
+        var map = { sunny: 'sunny', clear: 'sunny', cloudy: 'cloudy', overcast: 'cloudy', rain: 'rain', thunder: 'thunder', storm: 'thunder', snow: 'snow', aurora: 'aurora' };
         var w2 = map[cur.weather] || map[cur.code] || null;
         if (w2 && w2 !== curWeather) {
           if (followLive) { setWeather(w2, true); }
@@ -1908,6 +2364,8 @@
               var m = JSON.parse(ev.data);
               if (m.type === 'hotlist') applyHot(m.data || m);
               if (m.type === 'env') applyEnv2(m.data || m);
+              /* v7：把同一连接上的其它消息（房间 / AI / presence）分发出去 */
+              wsEmit(m);
             } catch (e) {}
           };
           ws.onerror = function () { ws.close(); };
@@ -1930,10 +2388,25 @@
     paintWeatherBtns();
     foxGif(WEATHERS[key].fox);
     foxGifIdx = 0;
-    try { ambSetWeather(key); } catch (e) {} // D1：雨/雪氛围音随天气切换
+    /* v7：极光 / 雷暴这类高细节天气提升渲染分辨率（超采样），其余天气回到 1.0 省电 */
+    var wantSS = (key === 'aurora') ? (IS_TOUCH ? 1.25 : 1.45) : (key === 'thunder' ? (IS_TOUCH ? 1.05 : 1.15) : 1)
+    try { setSuperSample(wantSS) } catch (e) { }
+    var shell = byId('uniShell');
+    if (shell) shell.setAttribute('data-weather', key);
+    if (key === 'thunder' && boltMesh) boltNext = 0.7; // 切进雷暴很快先劈一道
+    try { ambSetWeather(key); } catch (e) {} // D1：雨/雪/雷/极光氛围音随天气切换
     if (!silent) {
       uniSfx('weather');
-      foxSay('<b>🦊 看山：</b>' + (key === 'sunny' ? '晴天！晒晒知识，粒子都懒洋洋的 ☀️' : key === 'cloudy' ? '多云天，适合托腮想一想 🌤️' : key === 'rain' ? '下雨了，快缩到炉边躲躲 🌧️' : key === 'snow' ? '下雪啦，看山搓搓手 ❄️' : '看，极光！知识也在发光 🌌'), 4200);
+      var said = {
+        sunny: '晴天！晒晒知识，粒子都懒洋洋的 ☀️',
+        cloudy: '多云天，适合托腮想一想 🌤️',
+        rain: '下雨了，快缩到炉边躲躲 🌧️',
+        thunder: '打雷了！别怕，我在你旁边 —— 雷声大，知识点更亮 ⚡',
+        snow: '下雪啦，看山搓搓手 ❄️',
+        aurora: '快看极光！这是我今天最舍不得眨眼的一刻 🌌'
+      }[key] || '';
+      foxSay('<b>🦊 看山：</b>' + said, 4200);
+      if (key === 'aurora') setTimeout(foxSpin, 400);
     }
     if (window.__rkOnWeather) { try { window.__rkOnWeather(key); } catch (e) {} }
   }
@@ -2159,6 +2632,8 @@
       camera.aspect = el.clientWidth / Math.max(1, el.clientHeight);
       camera.updateProjectionMatrix();
       renderer.setSize(el.clientWidth, el.clientHeight, false);
+      try { resizePost(el.clientWidth, el.clientHeight); } catch (e) { }
+      try { foxDock.needReposition = true; } catch (e) { }
     });
   }
   U.enter = function () {
@@ -2217,6 +2692,7 @@
     closeCard();
     hideHot();
     hideKnow(); // 退出时一并收起，避免重进宇宙时面板还挂着
+    try { hideAiPanel(); } catch (e) { } // v7：AI/热聊面板同样收起
     try { closeUniMind(); } catch (e) {}
     try { if (AMB.rain) AMB.rain.target = 0.0001; if (AMB.snow) AMB.snow.target = 0.0001; } catch (e) {} // D1：退出宇宙氛围音淡出
     if (rd.topic) rdClose();
@@ -2313,7 +2789,7 @@
     });
     byId('uniKnowClose').addEventListener('click', hideKnow);
   }
-  function showKnow() { hideHot(); closeCard(); byId('uniKnowPanel').classList.add('on'); }
+  function showKnow() { hideHot(); closeCard(); try { hideAiPanel(); } catch (e) { } byId('uniKnowPanel').classList.add('on'); }
   function hideKnow() { var p = byId('uniKnowPanel'); if (p) p.classList.remove('on'); }
 
   function paintKnow() {
@@ -2510,6 +2986,7 @@
     var shell = byId('uniShell');
     if (!shell || !shell.classList.contains('on')) return;
     if (byId('uniReader').classList.contains('on')) return; // 让阅读器自己的 Esc 处理
+    if (byId('uniAiPanel') && byId('uniAiPanel').classList.contains('on')) { hideAiPanel(); e.stopPropagation(); e.preventDefault(); return; }
     if (byId('uniHotPanel').classList.contains('on')) { hideHot(); e.stopPropagation(); e.preventDefault(); return; }
     if (byId('uniKnowPanel') && byId('uniKnowPanel').classList.contains('on')) { hideKnow(); e.stopPropagation(); e.preventDefault(); return; }
     if (scope && scope !== '*') { setScope(null); e.stopPropagation(); }
@@ -2517,4 +2994,991 @@
 
   // 自动初始化（延迟，等 THREE 就绪由 boot 调用；这里只兜底）
   if (window.THREE) { setTimeout(function () { U.init(); }, 60); }
+
+/* ============================================================
+   v7 模块 · 炼金宇宙
+   1) AI 对话（DeepSeek / 知乎直答，SSE 流式，贴合当前星体上下文）
+   2) 多人实时热点话题房间（WebSocket，真实知乎热榜做话题池）
+   3) 原文阅读器：拉取知乎真实原文 + 批注修复 + 快速上手引导
+   4) 六种天气的看山联动与安全停靠
+   所有后端调用都走本地服务（密钥只在服务端，前端零密钥）
+   ============================================================ */
+
+  /* ---------- 后端基址（file:// 打开时回落到本机 8787） ---------- */
+  function apiBase() {
+    var saved = storeGet('apiBase', '');
+    if (saved) return String(saved).replace(/\/+$/, '');
+    if (location.protocol === 'file:') return 'http://127.0.0.1:8787';
+    return location.origin;
+  }
+  function apiURL(p) { return apiBase() + p; }
+
+  /* ---------- WS 消息分发（probeBackend 的 onmessage 会调用） ---------- */
+  var wsHooks = [];
+  function wsEmit(m) { for (var i = 0; i < wsHooks.length; i++) { try { wsHooks[i](m) } catch (e) { } } }
+  function wsSendRaw(obj) {
+    var w = U.__ws;
+    if (w && w.readyState === 1) { try { w.send(JSON.stringify(obj)); return true } catch (e) { } }
+    return false;
+  }
+
+  /* ============================================================
+     1. AI 对话
+     ============================================================ */
+  var ai = { msgs: [], busy: false, provider: '', ok: false, order: [], ready: false, pending: null };
+  function aiSave() {
+    try { var u = loadLS('rkUni6', {}) || {}; u.aiMsgs = ai.msgs.slice(-40); saveLS('rkUni6', u) } catch (e) { }
+  }
+  function aiLoad() {
+    try { var u = loadLS('rkUni6', null); if (u && u.aiMsgs && u.aiMsgs.length) ai.msgs = u.aiMsgs.slice(-40) } catch (e) { }
+  }
+  function aiCurrentTopic() {
+    if (rd.topic) return rd.topic;
+    if (selId) { var t = topicById(selId); if (t) return t; }
+    var sid = S().topicId;
+    return sid ? topicById(sid) : null;
+  }
+  function aiContext() {
+    var ctx = [];
+    var t = aiCurrentTopic();
+    if (t) {
+      ctx.push('用户当前正在看这篇收藏：《' + (t.q || t.title || '') + '》');
+      if (t.title && t.title !== t.q) ctx.push('标题：' + t.title);
+      if (t.core) ctx.push('原文核心观点：' + t.core);
+      if (t.author) ctx.push('答主：' + t.author);
+      if (Array.isArray(t.blocks) && t.blocks.length) ctx.push('原文要点：' + t.blocks.slice(0, 8).map(function (b) { return (b.tp ? b.tp + '：' : '') + (b.text || '') }).join('；'));
+    } else {
+      ctx.push('用户此刻没有选中具体收藏（在炼金宇宙里闲逛）。');
+    }
+    if (rdSel.text) ctx.push('用户在原文里选中了这段：「' + trimCJK(rdSel.text, 160) + '」');
+    var notes = rd.topic ? rdCurNotes() : [];
+    if (notes && notes.length) ctx.push('用户已写的批注：' + notes.slice(-6).map(function (n) { return trimCJK(n.text, 22) + (n.note ? '（批注：' + trimCJK(n.note, 30) + '）' : '') }).join('；'));
+    ctx.push('当前天气：' + (WEATHERS[curWeather || 'sunny'] || {}).name);
+    return ctx;
+  }
+  function paintAi() {
+    var box = byId('uniAiMsgs'); if (!box) return;
+    var h = '';
+    if (!ai.msgs.length) {
+      var t = aiCurrentTopic();
+      h = '<div class="u-empty">👋 我是<b>小炼</b>，你的 AI 学习伙伴。<br>' +
+        (t ? '现在盯着的这篇是《' + esc(trimCJK(t.q || t.title, 22)) + '》—— 你可以直接问我：这篇到底在说什么？我哪里没懂？出 3 道题考我？<br>' : '去星海里点一颗星，我就会结合那篇原文来回答你。<br>') +
+        '我背后接的是 <b>DeepSeek</b>（配置了有效密钥时）或 <b>知乎直答</b>，密钥只在服务端，浏览器里不出现任何 key。<br>' +
+        '<span style="opacity:.7">想体验"多人实时"？切到上面的 🔥 热点房间。</span></div>';
+    }
+    for (var i = 0; i < ai.msgs.length; i++) {
+      var m = ai.msgs[i];
+      if (m.role === 'sys') { h += '<div class="m sys">' + esc(m.text) + '</div>'; continue }
+      var who = m.role === 'me' ? '' : '<span class="who">小炼' + (m.provider ? pmk(m.provider) : '') + '</span>';
+      h += '<div class="m ' + (m.role === 'me' ? 'me' : 'ai') + '">' + who + esc(m.text || '') + (m.typing ? '<span class="ai-typing"><i></i><i></i><i></i></span>' + (m.thinking ? '<span style="font-size:.72rem;opacity:.7">深度思考中…</span>' : '') : '') + '</div>';
+    }
+    box.innerHTML = h;
+    box.scrollTop = box.scrollHeight;
+    var src = byId('uniAiSrc');
+    if (src) {
+      if (ai.busy) src.textContent = '生成中…';
+      else if (ai.ok) {
+        /* 分工：问答走知乎直答，抬杠走 DeepSeek */
+        if (ai.provider === 'zhida') src.textContent = '知乎直答' + (ai.zhModel ? ' · ' + ai.zhModel : '') + '（问答）';
+        else if (ai.provider === 'deepseek') src.textContent = 'DeepSeek · ' + (ai.dsModel || 'deepseek-chat') + '（问答）';
+        else src.textContent = '在线';
+        if (ai.provider === 'deepseek' && ai.balance && ai.balance.total) src.textContent += ' 余额 ' + ai.balance.total;
+      }
+      else src.textContent = ai.ready ? '后端在线（模型待配置）' : '离线演示';
+      src.title = (ai.keyIssue ? ('⚠️ ' + ai.keyIssue + '\n') : '') +
+        'AI 问答链：' + (ai.order || []).join(' → ') +
+        '\nAI 抬杠链：' + (ai.debateOrder && ai.debateOrder.length ? ai.debateOrder.join(' → ') : '（同问答）') +
+        (ai.models && ai.models.length ? '\nDeepSeek 可用模型：' + ai.models.join(' / ') : '');
+      src.className = 'src' + (ai.ok ? ' on' : '');
+    }
+    if (ai.keyIssue) {
+      var box2 = byId('uniAiMsgs');
+      if (box2 && !box2.querySelector('.ai-keywarn')) {
+        var w = document.createElement('div');
+        w.className = 'm sys ai-keywarn';
+        w.textContent = '⚠️ ' + ai.keyIssue + ' —— 已自动改用备用模型，功能不受影响。';
+        box2.insertBefore(w, box2.firstChild);
+      }
+    }
+  }
+  function pmk(p) {
+    var cls = p === 'deepseek' ? 'ds' : p === 'zhida' ? 'zh' : 'local';
+    var nm = p === 'deepseek' ? 'DeepSeek' : p === 'zhida' ? '知乎直答' : '本地';
+    return '<span class="pmk ' + cls + '">' + nm + '</span>';
+  }
+  function paintAiQuick() {
+    var box = byId('uniAiQuick'); if (!box) return;
+    var qs = [
+      ['这篇到底在说什么？', '用三句话把这篇讲清楚，别用术语。'],
+      ['我哪里可能没懂？', '猜一下我最可能误解的地方，并给一个检验方法。'],
+      ['出 3 道题考我', '针对这篇出 3 道自测题，先别给答案。'],
+      ['给我一句话记忆钩子', '给一条能记住这篇核心的一句话钩子。'],
+      ['和我抬杠', '用最激烈的语气反驳我：收藏就等于学会了。']
+    ];
+    box.innerHTML = qs.map(function (x, i) { return '<button data-aq="' + i + '">' + x[0] + '</button>' }).join('') +
+      '<button data-aq="notes">📝 帮我梳理批注</button>';
+    Array.prototype.forEach.call(box.querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-aq');
+        if (k === 'notes') {
+          var notes = rd.topic ? rdCurNotes() : [];
+          if (!notes.length) { toastU('你还没写批注 —— 先去「📖 原文圈点」划两笔', 0); return }
+          aiAsk('这是我的批注：' + notes.map(function (n) { return '「' + n.text + '」' + (n.note ? '（我的理解：' + n.note + '）' : '') }).join('；') + '。请指出我理解偏了的地方，并各补一句。');
+          return;
+        }
+        aiAsk(qs[Number(k)][1]);
+      });
+    });
+  }
+  function aiAsk(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (ai.busy) { toastU('小炼还在想上一条，稍等一下～', 0); return }
+    var inp = byId('uniAiInput'); if (inp) inp.value = '';
+    ai.msgs.push({ role: 'me', text: text });
+    aiSave(); paintAi();
+    ai.busy = true;
+    var holder = { role: 'ai', text: '', provider: '', typing: true };
+    ai.msgs.push(holder);
+    paintAi();
+    var payload = {
+      messages: ai.msgs.filter(function (m) { return m.role === 'me' || (m.role === 'ai' && m.text) }).slice(-10).map(function (m) { return { role: m.role === 'me' ? 'user' : 'assistant', content: m.text } }),
+      context: aiContext(),
+      maxTokens: 900
+    };
+    if (payload.messages[payload.messages.length - 1].content !== text) {
+      payload.messages.push({ role: 'user', content: text });
+    }
+    var done = false;
+    fetch(apiURL('/api/ai/chat/stream'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (r) {
+        if (!r.ok || !r.body || !r.headers.get('content-type') || r.headers.get('content-type').indexOf('event-stream') < 0) throw new Error('no-stream');
+        var reader = r.body.getReader();
+        var dec = new TextDecoder('utf-8');
+        var buf = '';
+        function pump() {
+          return reader.read().then(function (res) {
+            if (res.done) { finish(true); return }
+            buf += dec.decode(res.value, { stream: true });
+            var i;
+            while ((i = buf.indexOf('\n\n')) >= 0) {
+              var ev = buf.slice(0, i); buf = buf.slice(i + 2);
+              var line = null, lines = ev.split('\n');
+              for (var L = 0; L < lines.length; L++) if (lines[L].indexOf('data:') === 0) line = lines[L].slice(5).trim();
+              if (!line) continue;
+              var o = null; try { o = JSON.parse(line) } catch (e) { }
+              if (!o) continue;
+              if (o.type === 'start') { holder.provider = o.provider; ai.provider = o.provider; ai.ok = true; holder.typing = false; ai.dsModel = o.model || ai.dsModel; paintAi(); }
+              else if (o.type === 'thinking') { holder.typing = true; holder.thinking = true; paintAi(); }
+              else if (o.type === 'delta') { holder.typing = false; holder.thinking = false; holder.text += o.text; paintAi(); }
+              else if (o.type === 'warn') { ai.lastWarn = o.error; }
+              else if (o.type === 'error') { ai.lastWarn = o.error; }
+              else if (o.type === 'done') { if (!holder.text && o.text) holder.text = o.text; done = true; }
+            }
+            return pump();
+          });
+        }
+        return pump();
+      })
+      .catch(function () { return null })
+      .then(function () { finish(false) });
+
+    function finish(streamed) {
+      if (!streamed || !holder.text) {
+        /* 流式不可用 → 退回一次性 JSON 接口 */
+        return fetch(apiURL('/api/ai/chat'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          .then(function (r) { return r.json() })
+          .then(function (j) {
+            holder.text = (j && j.reply) || ('（连不上后端模型：' + ((j && j.error) || ai.lastWarn || '未知原因') + '）');
+            holder.provider = (j && j.provider) || '';
+            ai.provider = holder.provider; ai.ok = !!j.ok;
+          })
+          .catch(function () {
+            holder.text = localAiFallback(text);
+            holder.provider = 'local';
+          })
+          .then(function () { settle() });
+      }
+      settle();
+    }
+    function settle() {
+      holder.typing = false;
+      ai.busy = false;
+      if (!holder.text) holder.text = '（模型没有返回内容，换一种问法再试试？）';
+      aiSave(); paintAi();
+    }
+  }
+  function localAiFallback(text) {
+    var t = aiCurrentTopic();
+    return '（当前连不上后端模型，先用本地兜底）关于「' + trimCJK(text, 24) + '」：' +
+      (t && t.core ? '这篇的核心是「' + t.core + '」。' : '') +
+      '启动后端（node server.js）后我会调用真实模型回答你 —— 密钥在服务端 env 里，浏览器不持有任何 key。';
+  }
+  function aiHealth() {
+    return fetch(apiURL('/api/ai/models')).then(function (r) { return r.json() }).then(function (j) {
+      ai.ready = true;
+      ai.order = (j && j.order) || [];
+      var main = ai.order[0];
+      ai.ok = main === 'deepseek' || main === 'zhida';
+      ai.provider = main && main !== 'local' ? main : '';
+      ai.models = (j && j.models) || [];
+      ai.balance = (j && j.balance) || null;
+      ai.dsModel = j && j.deepseek ? j.deepseek.model : '';
+      ai.zhModel = j && j.zhida ? j.zhida.model : '';
+      ai.debateOrder = (j && j.debateOrder) || [];   // 抬杠链（DeepSeek 优先）
+      /* 只有"配了 key 但验证不过"才提示；没配 key 属于正常降级，不打扰用户 */
+      if (j && j.error && j.deepseek && j.deepseek.keyLooksValid) ai.keyIssue = j.error;
+      else ai.keyIssue = '';
+      paintAi();
+      return j;
+    }).catch(function () {
+      /* 老版本后端可能没有 /api/ai/models，退回 /api/ai/health */
+      return fetch(apiURL('/api/ai/health')).then(function (r) { return r.json() }).then(function (j) {
+        ai.ready = true;
+        ai.order = (j && j.order) || [];
+        var main = ai.order[0];
+        ai.ok = main === 'deepseek' || main === 'zhida';
+        ai.provider = main && main !== 'local' ? main : '';
+        paintAi();
+        return j;
+      }).catch(function () { ai.ready = false; ai.ok = false; paintAi(); return null });
+    });
+  }
+  function openAiPanel(tab) {
+    hideHot(); closeCard(); if (byId('uniKnowPanel')) hideKnow();
+    var p = byId('uniAiPanel');
+    if (!p) return;
+    p.classList.add('on');
+    foxDock.needReposition = true;
+    if (tab) aiTab(tab);
+    paintAi(); paintAiQuick();
+    if (!ai.ready) aiHealth().then(function () { paintRoomTopics() });
+    if (byId('uniRoomNick') && !byId('uniRoomNick').value) byId('uniRoomNick').value = room.nick;
+  }
+  function hideAiPanel() { var p = byId('uniAiPanel'); if (p) p.classList.remove('on'); foxDock.needReposition = true; }
+  function aiTab(t) {
+    var tabs = document.querySelectorAll('#uniAiPanel .aitab');
+    Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle('on', b.getAttribute('data-ait') === t) });
+    var mp = byId('uniAiPane'), rp = byId('uniRoomPane');
+    if (mp) mp.hidden = t !== 'ai';
+    if (rp) rp.hidden = t !== 'room';
+    if (t === 'room') { paintRoomTopics(); paintRoom(); }
+    else { paintAi(); paintAiQuick(); }
+  }
+
+  /* ============================================================
+     2. 多人实时热点话题房间
+     ============================================================ */
+  var room = { nick: '', topic: null, cur: null, msgs: [], users: 0, joined: false, net: false };
+  function roomLoadNick() {
+    try { var u = loadLS('rkUni6', null); if (u && u.roomNick) room.nick = u.roomNick } catch (e) { }
+    if (!room.nick) room.nick = '炼金客' + Math.floor(100 + Math.random() * 900);
+  }
+  function roomSaveNick() { try { var u = loadLS('rkUni6', {}) || {}; u.roomNick = room.nick; saveLS('rkUni6', u) } catch (e) { } }
+  function roomTopics() {
+    var items = [];
+    if (curServer && curServer.hot && curServer.hot.length) items = curServer.hot;
+    else items = hotList();
+    return items.slice(0, 12);
+  }
+  function paintRoomTopics() {
+    var box = byId('uniRoomTopics'); if (!box) return;
+    var items = roomTopics();
+    if (!items.length) { box.innerHTML = '<div class="u-empty">还没有话题 —— 启动后端后会自动拉取知乎实时热榜。</div>'; return }
+    var src = (curServer && curServer.live) ? '知乎实时热榜' : '本地示例热榜';
+    var h = '<div class="zh-note" style="padding:0 2px 4px">话题池：' + src + ' · 热门话题大家都能进，发言实时互通</div>';
+    h += items.map(function (it, i) {
+      var on = room.cur && room.cur.idx === i;
+      return '<div class="rt' + (on ? ' on' : '') + '" data-rt="' + i + '"><i>' + (it.rank || (i + 1)) + '</i><span>' + esc(trimCJK(it.q || it.title, 34)) + '</span></div>';
+    }).join('');
+    box.innerHTML = h;
+    Array.prototype.forEach.call(box.querySelectorAll('.rt'), function (el) {
+      el.addEventListener('click', function () {
+        var it = items[Number(el.getAttribute('data-rt'))];
+        if (it) roomJoin(it, Number(el.getAttribute('data-rt')));
+      });
+    });
+  }
+  function roomJoin(it, idx) {
+    room.cur = { idx: idx, title: it.q || it.title || '', url: it.url || '', id: 'hot:' + (it.id || idx) };
+    room.msgs = [];
+    room.joined = true;
+    var nickEl = byId('uniRoomNick');
+    if (nickEl && nickEl.value.trim()) { room.nick = nickEl.value.trim().slice(0, 12); roomSaveNick(); }
+    var sent = wsSendRaw({ type: 'join', room: room.cur.id, user: room.nick, topic: { title: room.cur.title, url: room.cur.url } });
+    room.net = sent;
+    paintRoomTopics(); paintRoom();
+    if (!sent) {
+      room.msgs.push({ user: 'system', kind: 'sys', text: '当前没有连上实时后端（启动 node server.js 后即可多人实时互通）。你仍然可以在本地看到自己的发言。', ts: now() });
+      paintRoom();
+    }
+    uniSfx('open');
+  }
+  function paintRoom() {
+    var box = byId('uniRoomMsgs'); if (!box) return;
+    var cur = byId('uniRoomCur');
+    if (cur) {
+      cur.innerHTML = room.cur
+        ? '当前话题：<b>' + esc(trimCJK(room.cur.title, 30)) + '</b> · 在线 <b>' + room.users + '</b> 人' +
+        (room.cur.url ? ' · <a href="' + esc(room.cur.url) + '" target="_blank" rel="noopener">打开知乎原题 ↗</a>' : '') +
+        ' <button id="uniRoomRead" class="uk-b" style="margin-left:6px">📖 拿它当原文批注</button>'
+        : '选一个热点话题，进入多人实时讨论';
+      var rb = byId('uniRoomRead');
+      if (rb) rb.addEventListener('click', function () {
+        if (!room.cur) return;
+        fetchOriginal({ q: room.cur.title, url: room.cur.url }, function (data) {
+          openReaderFromZhihu({ title: room.cur.title, url: room.cur.url, paras: data.paras, origin: data.origin });
+        });
+      });
+    }
+    var live = byId('uniRoomLive');
+    if (live) {
+      live.textContent = room.joined ? (room.net ? '实时已连接 · ' + room.users + ' 人在线' : '未连接后端') : '未进入话题';
+      live.className = 'room-live' + (room.net ? ' on' : '');
+    }
+    if (!room.msgs.length) {
+      box.innerHTML = room.joined
+        ? '<div class="u-empty">你是第一个到的～ 说点什么，或者输入 <b>@AI</b> 让小炼先开个场。</div>'
+        : '<div class="u-empty">进入话题后，这里会实时显示其他人的发言（开两个浏览器窗口就能看到实时互通）。<br>输入 <b>@AI</b> 可以让小炼也参与讨论，回答会广播给房间里所有人。</div>';
+      return;
+    }
+    box.innerHTML = room.msgs.map(function (m) {
+      if (m.kind === 'sys') return '<div class="m sys">' + esc(m.text) + '</div>';
+      var cls = m.user === room.nick ? 'mine' : (m.kind === 'ai' ? 'aibot' : 'other');
+      var who = '<span class="who">' + esc(m.user) + (m.provider ? pmk(m.provider) : '') + ' · ' + new Date(m.ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) + '</span>';
+      return '<div class="m ' + cls + '">' + who + esc(m.text) + '</div>';
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+  function roomSend() {
+    var inp = byId('uniRoomInput'); if (!inp) return;
+    var text = (inp.value || '').trim();
+    if (!text) return;
+    inp.value = '';
+    var nickEl = byId('uniRoomNick');
+    if (nickEl && nickEl.value.trim()) { room.nick = nickEl.value.trim().slice(0, 12); roomSaveNick(); }
+    if (!room.joined) { toastU('先在上面选一个热点话题，再发言', 0); return }
+    var mine = { id: 'l' + now().toString(36), user: room.nick, text: text, ts: now(), kind: 'text' };
+    room.msgs.push(mine); paintRoom();
+    wsSendRaw({ type: 'say', room: room.cur.id, user: room.nick, text: text });
+    if (/@AI|@ai|@小炼/i.test(text)) {
+      var q = text.replace(/@AI|@ai|@小炼/g, '').trim() || '用一句话点评这个热点';
+      wsSendRaw({ type: 'ai', room: room.cur.id, text: q });
+      if (!room.net) toastU('没有实时后端，@AI 暂时不可用（启动 node server.js 后可用）', 0);
+    }
+  }
+  wsHooks.push(function (m) {
+    if (m.type === 'hello') {
+      room.net = true;
+      if (m.ai) { ai.order = m.ai; ai.provider = m.ai[0]; ai.ok = m.ai[0] === 'deepseek' || m.ai[0] === 'zhida'; ai.ready = true; }
+      paintAi(); paintRoom();
+      return;
+    }
+    if (m.type === 'hotlist' && m.data && m.data.items) { setTimeout(paintRoomTopics, 60); return }
+    if (m.type === 'room') {
+      var d = m.data || {};
+      room.net = true;
+      room.users = d.users || 0;
+      if (d.msgs && !room.msgs.length) {
+        room.msgs = d.msgs.map(function (x) { return { user: x.user, text: x.text, ts: x.ts, kind: x.kind } });
+      }
+      paintRoom();
+      return;
+    }
+    if (m.type === 'room:msg') {
+      var mm = m.data && m.data.msg; if (!mm) return;
+      room.net = true;
+      if (m.data.users != null) room.users = m.data.users;
+      if (mm.kind === 'ai') {
+        /* AI 的"正在思考"占位消息用同 id 回填，避免出现两条 */
+        var at = -1;
+        for (var i = 0; i < room.msgs.length; i++) if (room.msgs[i].id === mm.id) { at = i; break }
+        if (at >= 0) room.msgs[at] = mm; else room.msgs.push(mm);
+      } else {
+        room.msgs.push(mm);
+      }
+      paintRoom();
+      return;
+    }
+    if (m.type === 'room:presence') {
+      if (m.data && m.data.users != null) { room.users = m.data.users; room.net = true; paintRoom(); }
+      return;
+    }
+    if (m.type === 'room:typing') {
+      if (m.data && m.data.user) { /* 轻提示，不刷屏 */ }
+      return;
+    }
+  });
+
+  /* ============================================================
+     3. 原文阅读器：知乎真实原文 + 批注修复 + 快速上手
+     ============================================================ */
+  function fetchOriginal(qy, cb) {
+    var u = '/api/zhihu/original?q=' + encodeURIComponent(qy.q || '') + (qy.url ? '&url=' + encodeURIComponent(qy.url) : '');
+    fetch(apiURL(u)).then(function (r) { return r.json() }).then(function (j) { cb(j || {}) }).catch(function () { cb({ ok: false, error: '连不上后端' }) });
+  }
+  /* 用知乎真实正文打开阅读器（可批注） */
+  function openReaderFromZhihu(payload) {
+    var paras = payload.paras || [];
+    if (!paras.length) { toastU('没拿到可用正文：' + (payload.error || '知乎未返回正文'), 0); return }
+    var id = 'zh' + String(payload.url || payload.title || '').replace(/[^0-9a-zA-Z]/g, '').slice(-18);
+    var t = {
+      id: id, cat: 'study', custom: false,
+      q: payload.title || '知乎原文', title: payload.title || '知乎原文',
+      author: '知乎', authorDesc: '', votes: 0, time: '',
+      core: '', blocks: [], fun: '',
+      zhUrl: payload.url || '', zhOrigin: payload.origin || '', paras: paras
+    };
+    rdExternal[t.id] = t;
+    rdLoadStore();
+    rd.topic = t;
+    renderReader(t, payload);
+    if (byId('uniShell').classList.contains('on')) { /* 保持宇宙在背后 */ }
+    uniSfx('open');
+  }
+  var rdExternal = {};
+  function topicByIdV7(id) { return topicById(id) || rdExternal[id] || null; }
+  function renderReader(t, meta) {
+    var body = byId('urBody');
+    var st = rdStoreOf(t.id);
+    var sig = (t.paras && t.paras.length) ? ('real:' + t.paras.length + ':' + (t.paras[0] || '').slice(0, 24)) : 'demo';
+    if (st.sig !== sig) { st.sig = sig; st.paras = null; if (st.notes && st.notes.length) st.notes = []; }
+    body.innerHTML = rdBuildArticle(t);
+    if (st.paras && st.paras.length) {
+      var ps = body.querySelectorAll('p.para');
+      if (ps.length === st.paras.length) for (var i = 0; i < ps.length; i++) ps[i].innerHTML = st.paras[i];
+      else st.paras = null;
+    }
+    byId('urQ').textContent = t.q;
+    var th = themeOf(t.cat);
+    byId('urMeta').innerHTML = '<span class="ava">' + esc((t.author || '知').slice(0, 1)) + '</span><span>' + esc(t.author || '知乎') +
+      (t.zhUrl ? ' · <a href="' + esc(t.zhUrl) + '" target="_blank" rel="noopener">在知乎打开 ↗</a>' : '') +
+      (t.votes ? ' · 赞同 ' + fmtV(t.votes) : '') + '</span>' + (meta === undefined ? '<span>' + esc(th.icon + ' ' + th.name) + '</span>' : '');
+    byId('uniReader').classList.add('on');
+    closeCard(); hideHot(); hideAiPanel(); if (byId('uniKnowPanel')) hideKnow();
+    paintSrcBar();
+    rdPaintNotes();
+    uniSfx('open');
+    setTimeout(function () { body.focus(); }, 60);
+  }
+  /* 来源条：显示当前原文是"演示稿"还是"知乎真实原文"，并提供一键拉取 */
+  function paintSrcBar() {
+    var bar = byId('urSrcBar'); if (!bar) return;
+    var t = rd.topic; if (!t) { bar.innerHTML = ''; return }
+    var isReal = !!(t.paras && t.paras.length);
+    var chars = isReal ? t.paras.join('').length : 0;
+    bar.innerHTML =
+      (isReal
+        ? '<span class="tag2 real">✅ 知乎真实原文 · ' + chars + ' 字 · ' + t.paras.length + ' 段</span>'
+        : '<span class="tag2">📄 演示原文（按收藏内容整理的问答样式）</span>') +
+      (t.zhUrl ? '<a href="' + esc(t.zhUrl) + '" target="_blank" rel="noopener">知乎原链接 ↗</a>' : '') +
+      '<span style="opacity:.7">批注自动保存到本机</span>' +
+      '<button id="urFetchBtn">' + (isReal ? '🔄 重新拉取知乎原文' : '📥 拉取知乎原文（可批注）') + '</button>';
+    var b = byId('urFetchBtn');
+    if (b) b.addEventListener('click', function () {
+      b.disabled = true; b.textContent = '正在从知乎拉取…';
+      fetchOriginal({ q: t.q || t.title, url: t.zhUrl || '' }, function (data) {
+        b.disabled = false; b.textContent = '📥 拉取知乎原文（可批注）';
+        if (!data.ok) { toastU('没拉到正文：' + (data.error || data.note || '知乎未返回正文'), 0); paintSrcBar(); return }
+        t.paras = data.paras; t.zhUrl = data.url || t.zhUrl; t.zhOrigin = data.origin;
+        rdExternal[t.id] = t;
+        var st = rdStoreOf(t.id);
+        /* 原文换了 → 旧圈点快照与批注作废，避免错位 */
+        if (st.notes && st.notes.length) toastU('原文已更新，旧的 ' + st.notes.length + ' 条批注已清空（段落不再对应）', 0);
+        st.notes = []; st.paras = null;
+        var body = byId('urBody');
+        body.innerHTML = rdBuildArticle(t);
+        paintSrcBar(); rdPaintNotes();
+        toastU('已拉取知乎原文 ' + data.paras.length + ' 段，可以直接圈点批注了 ✅', 1);
+        if (!rdGuide.done) setTimeout(function () { rdGuideShow(1) }, 420);
+      });
+    });
+  }
+
+  /* ---------- 批注：选区捕获（修掉"选不中/点了没反应"） ---------- */
+  var rdSel = { range: null, text: '', para: null };
+  function paraOf(node) {
+    var el = node && node.nodeType === 1 ? node : (node && node.parentElement);
+    return el && el.closest ? el.closest('p.para') : null;
+  }
+  function rdCaptureSelection() {
+    var body = byId('urBody'); if (!body) return false;
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount || sel.isCollapsed) return false;
+    var r = sel.getRangeAt(0);
+    if (!body.contains(r.commonAncestorContainer)) return false;
+    var aP = paraOf(sel.anchorNode), fP = paraOf(sel.focusNode);
+    if (!aP || aP !== fP) return false;         // 跨段不支持（结构会乱）
+    if (!r.toString().trim()) return false;
+    rdSel.range = r.cloneRange();
+    rdSel.text = r.toString().trim();
+    rdSel.para = aP;
+    return true;
+  }
+  function rdRestoreSelection() {
+    if (!rdSel.range) return false;
+    try {
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(rdSel.range);
+      return true;
+    } catch (e) { return false }
+  }
+  /* 重写 rdApply：优先用"上一次捕获到的区间"，
+     这样即使用户点工具条时浏览器清掉了选区，也依然能高亮成功。 */
+  function rdApplyV7(color, withNote, paraEl) {
+    var body = byId('urBody');
+    if (!rd.topic) return null;
+    if (paraEl) {
+      /* 整段批注：只包正文（跳过段落标签与 ✏️ 按钮），一键就能批注 */
+      var skip = [];
+      var nodes = Array.prototype.slice.call(paraEl.childNodes);
+      for (var nI = 0; nI < nodes.length; nI++) {
+        var nd = nodes[nI];
+        if (nd.nodeType === 1 && nd.classList && (nd.classList.contains('ur-pbtn') || nd.classList.contains('para-tag'))) continue;
+        skip.push(nd);
+      }
+      var text = skip.map(function (n) { return n.textContent || '' }).join('').trim();
+      if (!text) return null;
+      var mk0 = document.createElement('mark');
+      mk0.className = 'ur-hl ur-' + (color || 'y') + (withNote ? ' ur-note' : '');
+      var id0 = rdNewId();
+      mk0.setAttribute('data-nid', id0);
+      paraEl.insertBefore(mk0, skip[0]);
+      for (var mI = 0; mI < skip.length; mI++) mk0.appendChild(skip[mI]);
+      var st0 = rdStoreOf(rd.topic.id);
+      st0.notes.push({ id: id0, color: color || 'y', text: trimCJK(text, 42), note: withNote ? '' : null });
+      rdPersist(); rdPaintNotes();
+      if (withNote) openNotePop(mk0, id0); else uniSfx('pick');
+      return mk0;
+    }
+    var live = false;
+    var sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.rangeCount && body.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      live = rdCaptureSelection();
+    }
+    if (!live) rdRestoreSelection();
+    if (!rdSel.range) { toastU('请先在正文里选中一段文字（或用段落左侧的 ✏️ 一键整段批注）', 0); return null }
+    var r = rdSel.range;
+    if (!body.contains(r.commonAncestorContainer)) { toastU('选区已失效，请重新选择', 0); return null }
+    if (r.collapsed) { toastU('请先选中一段文字', 0); return null }
+    var aP = paraOf(r.startContainer), fP = paraOf(r.endContainer);
+    if (!aP || aP !== fP) { toastU('请在一段原文内选择文字', 0); return null }
+    /* 已有 mark 嵌套时，先取最外层，避免反复嵌套 */
+    var frag;
+    try { frag = r.extractContents() } catch (e) { toastU('选区跨越了已有圈点，请重新选择', 0); return null }
+    var mk = document.createElement('mark');
+    mk.className = 'ur-hl ur-' + (color || 'y') + (withNote ? ' ur-note' : '');
+    mk.appendChild(frag);
+    r.insertNode(mk);
+    var text2 = (mk.textContent || '').trim();
+    if (!text2) { mk.remove(); toastU('这段选区是空的，换个位置试试', 0); return null }
+    var st = rdStoreOf(rd.topic.id);
+    var id = rdNewId();
+    mk.setAttribute('data-nid', id);
+    st.notes.push({ id: id, color: color || 'y', text: trimCJK(text2, 42), note: withNote ? '' : null });
+    rdPersist();
+    try { sel.removeAllRanges() } catch (e) { }
+    rdSel.range = null; rdSel.text = '';
+    hideSelMenu();
+    rdPaintNotes();
+    if (withNote) openNotePop(mk, id); else uniSfx('pick');
+    return mk;
+  }
+  /* 批注入门引导（3 步，只跑一次） */
+  var rdGuide = { done: false, step: 0 };
+  try { var _g = loadLS('rkUni6', null); if (_g && _g.rdGuideDone) rdGuide.done = true } catch (e) { }
+  function rdGuideClean() {
+    var g = byId('urGuideBox'); if (g) g.remove();
+    var s = byId('urGuideSpot'); if (s) s.remove();
+  }
+  function rdGuideShow(step) {
+    rdGuideClean();
+    if (!rdGuide.done) rdGuide.step = step;
+    var R = byId('uniReader').getBoundingClientRect();
+    var spot = document.createElement('div');
+    spot.className = 'ur-gspot'; spot.id = 'urGuideSpot';
+    document.body.appendChild(spot);
+    var target = null, title = '', text = '', place = 'right';
+    if (step === 1) {
+      target = byId('urBody'); title = '① 先选中一句话';
+      text = '在正文里<b>拖选一句话</b>（手机上是长按选中）。选好后会立刻弹出高亮工具条。';
+    } else if (step === 2) {
+      target = byId('urSelMenu'); title = '② 点色块 = 高亮';
+      text = '工具条上有 黄 / 蓝 / 粉 三个色块，点一下就把这句圈成高亮；点 <b>📝</b> 会直接打开批注框。';
+      if (!target || !target.classList.contains('on')) { target = byId('urTools'); text = '没有选中文字时，把鼠标移到任意段落上，左侧会出现 <b>✏️</b> —— 点它就能<b>一键整段批注</b>。'; }
+    } else {
+      target = byId('urFetchBtn') || byId('urSrcBar'); title = '③ 拉到真实知乎原文';
+      text = '点 <b>📥 拉取知乎原文</b> 就能把这条收藏对应的知乎正文拉进来，<b>在真实原文上直接圈点批注</b>，全部自动保存。';
+    }
+    var tr = target ? target.getBoundingClientRect() : R;
+    spot.style.left = (tr.left - 4) + 'px';
+    spot.style.top = (tr.top - 4) + 'px';
+    spot.style.width = Math.max(20, tr.width + 8) + 'px';
+    spot.style.height = Math.max(20, tr.height + 8) + 'px';
+    var box = document.createElement('div');
+    box.className = 'ur-guide'; box.id = 'urGuideBox';
+    box.innerHTML = '<span class="gstep">批注快速上手 ' + step + ' / 3</span><b>' + title + '</b><div style="margin-top:4px">' + text + '</div>' +
+      '<div class="grow"><button class="gnext">' + (step >= 3 ? '开始批注 →' : '下一步') + '</button><button class="gskip">不再提示</button></div>';
+    document.body.appendChild(box);
+    var bw = box.offsetWidth || 284, bh = box.offsetHeight || 140;
+    var left = clamp(tr.left - bw - 16, 8, document.documentElement.clientWidth - bw - 8);
+    if (tr.left - bw - 16 < 8) left = clamp(tr.right + 16, 8, document.documentElement.clientWidth - bw - 8);
+    var top = clamp(tr.top + 8, 8, Math.max(8, document.documentElement.clientHeight - bh - 8));
+    box.style.left = left + 'px'; box.style.top = top + 'px';
+    box.querySelector('.gnext').addEventListener('click', function () {
+      if (step >= 3) { rdGuideDone(); rdGuideClean(); return }
+      rdGuideShow(step + 1);
+    });
+    box.querySelector('.gskip').addEventListener('click', function () { rdGuideDone(); rdGuideClean() });
+  }
+  function rdGuideDone() { rdGuide.done = true; try { var u = loadLS('rkUni6', {}) || {}; u.rdGuideDone = true; saveLS('rkUni6', u) } catch (e) { } }
+
+  /* 段落级"一键批注"按钮注入 */
+  function injectParaBtns() {
+    var body = byId('urBody'); if (!body) return;
+    var ps = body.querySelectorAll('p.para');
+    for (var i = 0; i < ps.length; i++) {
+      var p = ps[i];
+      if (p.querySelector(':scope > .ur-pbtn')) continue;
+      var b = document.createElement('button');
+      b.className = 'ur-pbtn'; b.type = 'button';
+      b.title = '一键把这一整段变成批注（不用先选中）';
+      b.textContent = '✏️';
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation() });
+      (function (btn, para) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          if (!rdSel.range && window.getSelection && !window.getSelection().isCollapsed) rdCaptureSelection();
+          rdApply(rd.color, true, para);
+        });
+      })(b, p);
+      p.insertBefore(b, p.firstChild);
+    }
+  }
+
+  /* ---------- 阅读器 v7 绑定（在旧绑定之上补齐，不改动旧逻辑） ---------- */
+  function rdBindV7() {
+    var body = byId('urBody'); if (!body || body.__v7) return;
+    body.__v7 = true;
+    /* 选区捕获：鼠标抬起、手指抬起、键盘选择都覆盖 */
+    document.addEventListener('selectionchange', function () {
+      if (!rd.topic) return;
+      var sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      rdCaptureSelection();
+    });
+    body.addEventListener('mouseup', function (e) {
+      /* 同步先抓一次选区（最可靠），10ms 后再补一次并弹工具条 */
+      var captured = rdCaptureSelection();
+      setTimeout(function () {
+        if (!captured) captured = rdCaptureSelection();
+        if (captured && rdSel.range) {
+          var r = rdSel.range.getBoundingClientRect ? rdSel.range.getBoundingClientRect() : null;
+          var x = (r && r.width) ? r.left + r.width / 2 : e.clientX;
+          var y = (r && r.top) ? r.top : e.clientY;
+          selMenuShow(x, y);
+        }
+      }, 10);
+    });
+    /* 移动端：长按选词后 touchend 也要出工具条 */
+    body.addEventListener('touchend', function (e) {
+      setTimeout(function () {
+        if (rdCaptureSelection()) {
+          var r = rdSel.range.getBoundingClientRect();
+          var t = (e.changedTouches && e.changedTouches[0]) || {};
+          selMenuShow(r.left + r.width / 2 || t.clientX || 0, (r.top || t.clientY || 0) - 8);
+        }
+      }, 260);
+    });
+    /* 关键修复：工具条上的 mousedown 必须 preventDefault，
+       否则浏览器会先清掉文档选区，click 时选区已经没了 → “点了没反应” */
+    var menu = byId('urSelMenu');
+    if (menu) {
+      menu.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); }, true);
+      menu.addEventListener('touchstart', function (e) { /* 触摸端由 click 处理，避免重复 */ }, { passive: true });
+    }
+    var tools = byId('urTools');
+    if (tools) tools.addEventListener('mousedown', function (e) { if (e.target.closest && e.target.closest('.hl-chip,.note')) e.preventDefault() });
+    /* 快捷操作按钮 */
+    var gb = byId('urGuideBtn');
+    if (gb) gb.addEventListener('click', function () { rdGuideShow(1) });
+    /* 快捷键：1/2/3 换颜色，N 批注，Esc 关 */
+    document.addEventListener('keydown', function (e) {
+      if (!rd.topic) return;
+      var tag = (e.target && e.target.tagName) || '';
+      if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+      if (e.key === '1') { rd.color = 'y'; toastU('当前高亮颜色：黄', 1); }
+      else if (e.key === '2') { rd.color = 'b'; toastU('当前高亮颜色：蓝', 1); }
+      else if (e.key === '3') { rd.color = 'p'; toastU('当前高亮颜色：粉', 1); }
+      else if (e.key === 'n' || e.key === 'N') { if (rdCaptureSelection()) rdApply(rd.color, true); }
+    });
+    /* 首次打开自动跑引导 */
+    if (!rdGuide.done) setTimeout(function () { if (rd.topic) rdGuideShow(1) }, 700);
+  }
+
+  /* ---------- 阅读器增强：包装旧实现（保持兼容） ---------- */
+  var __rdBuildArticle = rdBuildArticle;
+  rdBuildArticle = function (t) {
+    if (t && t.paras && t.paras.length) {
+      var h = [];
+      h.push('<div class="zh-q">' + esc(t.q || t.title || '知乎原文') + '</div>');
+      h.push('<div class="zh-a"><div class="ava2">知</div><div class="who"><b>知乎原文</b>来自知乎开放平台 · <a href="' + esc(t.zhUrl || '#') + '" target="_blank" rel="noopener">打开原链接 ↗</a></div></div>');
+      for (var i = 0; i < t.paras.length; i++) {
+        h.push('<p class="para zh-real">' + esc(t.paras[i]) + '</p>');
+      }
+      h.push('<p class="para" style="font-size:.8em;color:#a89f8a">—— 正文来自知乎开放平台（developer.zhihu.com）返回的内容摘要，按段落切分以便圈点批注；完整正文请点上方「打开原链接」。</p>');
+      return h.join('');
+    }
+    return __rdBuildArticle.call(null, t);
+  };
+  var __rdOpen = rdOpen;
+  rdOpen = function (id) {
+    var t = topicByIdV7(id);
+    if (!t) return;
+    rdLoadStore();
+    rd.topic = t;
+    if (t.paras && t.paras.length) { renderReader(t, undefined); return }
+    /* 演示选题：沿用旧逻辑渲染，再补 v7 的来源条 / 快捷批注 */
+    __rdOpen.call(null, id);
+    try { paintSrcBar(); injectParaBtns(); } catch (e) { }
+  };
+  var __rdPaintNotes = rdPaintNotes;
+  rdPaintNotes = function () {
+    __rdPaintNotes.call(null);
+    try { injectParaBtns(); } catch (e) { }
+    var cnt = byId('urCnt');
+    if (cnt && rd.topic && !rdGuide.done) {
+      cnt.innerHTML += ' <button class="ur-tip" id="urCntGuide" style="cursor:pointer">❔ 3 步学会批注</button>';
+      var g = byId('urCntGuide');
+      if (g) g.addEventListener('click', function () { rdGuideShow(1) });
+    }
+  };
+  /* 用 v7 版覆盖 rdApply（修掉选区丢失导致批注失败的问题） */
+  rdApply = rdApplyV7;
+
+  function v7Boot() {
+    if (v7Boot.done) return;
+    v7Boot.done = true;
+    try { aiLoad(); } catch (e) { }
+    try { roomLoadNick(); } catch (e) { }
+    var nickEl = byId('uniRoomNick');
+    if (nickEl) {
+      nickEl.value = room.nick;
+      nickEl.addEventListener('change', function () { room.nick = (nickEl.value || '').trim().slice(0, 12) || room.nick; roomSaveNick(); });
+    }
+    /* 看山：工具条 + 拖拽 */
+    try { bindFoxTools(); placeFox(); } catch (e) { }
+    /* AI 面板 */
+    var ab = byId('uniAiBtn');
+    if (ab) ab.addEventListener('click', function () {
+      if (byId('uniAiPanel').classList.contains('on')) hideAiPanel(); else openAiPanel('ai');
+    });
+    var ac = byId('uniAiClose');
+    if (ac) ac.addEventListener('click', hideAiPanel);
+    Array.prototype.forEach.call(document.querySelectorAll('#uniAiPanel .aitab'), function (b) {
+      b.addEventListener('click', function () { aiTab(b.getAttribute('data-ait')); });
+    });
+    var send = byId('uniAiSend'), inp = byId('uniAiInput');
+    if (send) send.addEventListener('click', function () { aiAsk(inp.value) });
+    if (inp) inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); aiAsk(inp.value) }
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); aiAsk(inp.value) }
+    });
+    var rs = byId('uniRoomSend'), ri = byId('uniRoomInput');
+    if (rs) rs.addEventListener('click', roomSend);
+    if (ri) ri.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); roomSend() } });
+    /* 阅读器 v7 绑定 */
+    try { rdBindV7(); } catch (e) { }
+    /* 召回看山（藏起来之后） */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'f' && e.altKey) { foxDock.hidden = !foxDock.hidden; foxDock.needReposition = true; foxSaveDock(); placeFox(); }
+    });
+    window.addEventListener('resize', function () { foxDock.needReposition = true; });
+  }
+  var __initBase = U.init;
+  U.init = function () {
+    __initBase.apply(null, arguments);
+    try { v7Boot(); } catch (e) { }
+  };
+
+  /* ---------- v7 对外钩子（给 app.js / boot.js 用） ---------- */
+  U.openReader = function (id) { return rdOpen(id) }; // 覆盖旧引用，让 boot.js 拿到 v7 版
+  U.aiAsk = function (q) { openAiPanel('ai'); aiAsk(q); };
+  U.openAi = openAiPanel;
+  U.closeAi = hideAiPanel;
+  U.openRoom = function () { openAiPanel('room'); };
+  U.zhihuOriginal = fetchOriginal;
+  U.openReaderFromZhihu = openReaderFromZhihu;
+  U.readerGuide = rdGuideShow;
+  U.showFox = function () { foxDock.hidden = false; foxDock.needReposition = true; placeFox(); };
+  U.weatherList = function () { return WEATHER_ORDER.slice(); };
+  U.rdApply = function (c, n, paraEl) { return rdApply(c, n, paraEl) };
+  U.debugV7 = function () {
+    return {
+      weathers: WEATHER_ORDER.length, weather: curWeather,
+      auroraLayers: auroraLayers.length, post: postOK, ss: SS,
+      fox: { side: foxDock.side, x: foxDock.x, y: foxDock.y, min: foxDock.min, hidden: foxDock.hidden },
+      ai: { ready: ai.ready, ok: ai.ok, provider: ai.provider, msgs: ai.msgs.length },
+      room: { joined: room.joined, net: room.net, users: room.users, msgs: room.msgs.length, id: room.cur ? room.cur.id : null },
+      notes: rd.topic ? rdCurNotes().length : 0,
+      api: apiBase()
+    };
+  };
+
+  /* ============================================================
+     自测钩子（?selftest=1）与画面钩子（?wx=<天气> / ?show=<面板>）
+     仅用于验证与截图取证，正常访问不触发，与既有 ?diag=1 / ?fps=1 同规格。
+     ============================================================ */
+  function rkDiagLine(tag, val) {
+    var pre = byId('rkSelfTest');
+    if (!pre) {
+      pre = document.createElement('pre');
+      pre.id = 'rkSelfTest';
+      pre.style.cssText = 'position:fixed;left:0;bottom:0;z-index:999998;max-width:100vw;max-height:40vh;overflow:auto;background:rgba(0,0,0,.92);color:#8f8;font:11px/1.45 Consolas,monospace;padding:6px;margin:0;white-space:pre-wrap';
+      document.body.appendChild(pre);
+    }
+    pre.textContent += tag + ' :: ' + val + '\n';
+  }
+  function rkSelftest() {
+    var out = [];
+    function T(name, cond, extra) { out.push((cond ? 'PASS' : 'FAIL') + ' | ' + name + (extra ? ' | ' + extra : '')); rkDiagLine(name, (cond ? 'PASS' : 'FAIL') + (extra ? ' (' + extra + ')' : '')); }
+    try {
+      /* 1. 六种天气 */
+      T('weather-count-6', WEATHER_ORDER.length === 6, WEATHER_ORDER.join(','));
+      T('weather-thunder-exists', WEATHER_ORDER.indexOf('thunder') >= 0);
+      T('weather-buttons-6', document.querySelectorAll('#uniWeather .wbtn').length === 6,
+        'n=' + document.querySelectorAll('#uniWeather .wbtn').length);
+      var auroraOK = true, err = '';
+      for (var i = 0; i < WEATHER_ORDER.length; i++) {
+        try { setWeather(WEATHER_ORDER[i], true) } catch (e) { auroraOK = false; err += WEATHER_ORDER[i] + ':' + e.message + ';' }
+      }
+      T('weather-switch-no-throw', auroraOK, err);
+      T('aurora-layers-3', auroraLayers.length === 3, 'layers=' + auroraLayers.length);
+      var geo = auroraLayers[0] && auroraLayers[0].mesh.geometry;
+      var segs = geo ? geo.parameters.segments : 0;
+      T('aurora-high-density', segs >= 200, 'mainSegX=' + segs);
+      T('aurora-shader-has-flow', !!(auroraLayers[0] && auroraLayers[0].mesh.material.uniforms.uT), 'uT uniform 存在（时间驱动流动）');
+      T('aurora-supersample', SS > 1.2, 'SS=' + SS);
+      setWeather('aurora', true);
+
+      /* 2. 看山安全停靠 */
+      var foxEl = byId('uniFox');
+      var fb = foxEl.getBoundingClientRect();
+      var cv = byId('uniCanvas').getBoundingClientRect();
+      T('fox-visible', getComputedStyle(foxEl).display !== 'none', getComputedStyle(foxEl).display);
+      T('fox-size-small', fb.width <= 110 && fb.height <= 110, Math.round(fb.width) + 'x' + Math.round(fb.height));
+      T('fox-left-bottom-safe', fb.left < cv.width * 0.25 && fb.top > cv.height * 0.5,
+        'left=' + Math.round(fb.left) + '/' + Math.round(cv.width) + ' top=' + Math.round(fb.top) + '/' + Math.round(cv.height));
+      T('fox-cute-anim', /foxCute/.test(getComputedStyle(byId('uniFoxImg')).animationName), getComputedStyle(byId('uniFoxImg')).animationName);
+      T('fox-sparkles', document.querySelectorAll('#uniFox .sparkle').length >= 3);
+      T('fox-tools-present', !!document.querySelector('#uniFox .foxtools'));
+
+      /* 3. 电影级 / 玻璃液态 */
+      var g = byId('uniGrade');
+      T('grade-layer', !!g && getComputedStyle(g).pointerEvents === 'none');
+      T('grade-vignette', !!document.querySelector('#uniGrade .vg'));
+      T('grade-grain', /data:image\/svg/.test(getComputedStyle(document.querySelector('#uniGrade .grain')).backgroundImage));
+      var panel = byId('uniAiPanel');
+      var bf = getComputedStyle(panel).backdropFilter || getComputedStyle(panel).webkitBackdropFilter || '';
+      T('liquid-glass-blur', /blur/.test(bf), bf);
+      T('liquid-glass-specular', /gradient/.test(getComputedStyle(panel, '::before').backgroundImage));
+      T('post-pipeline', typeof postOK === 'boolean', 'postOK=' + postOK);
+
+      /* 4. 批注（bug 修复 + 快速上手） */
+      var topics = (window.DEMO && window.DEMO.topics) || [];
+      var learned = Object.keys((window.S && window.S.learned) || {});
+      var id = learned.length ? learned[0] : (topics[0] && topics[0].id);
+      if (!id) { T('reader-open', false, 'no topic') } else {
+        rdOpen(id);
+        var body = byId('urBody');
+        var paras = body.querySelectorAll('p.para');
+        T('reader-open', document.getElementById('uniReader').classList.contains('on'), 'paras=' + paras.length);
+        T('para-quick-buttons', document.querySelectorAll('#urBody .ur-pbtn').length > 0,
+          'n=' + document.querySelectorAll('#urBody .ur-pbtn').length);
+        function textNodeOf(p) {
+          for (var k = 0; k < p.childNodes.length; k++) {
+            var nd = p.childNodes[k];
+            if (nd.nodeType === 3 && nd.textContent.trim().length > 6) return nd;
+            if (nd.nodeType === 1 && !nd.classList.contains('ur-pbtn') && !nd.classList.contains('para-tag') && nd.textContent.trim().length > 6) return nd.firstChild;
+          }
+          return null;
+        }
+        var tn = paras[0] ? textNodeOf(paras[0]) : null;
+        var before = body.querySelectorAll('mark.ur-hl').length;
+        if (tn) {
+          var r = document.createRange(); r.setStart(tn, 0); r.setEnd(tn, Math.min(8, tn.textContent.length));
+          var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+          var mk = rdApply('y', false);
+          T('annotate-select', !!mk, 'marks=' + body.querySelectorAll('mark.ur-hl').length);
+        } else { T('annotate-select', false, 'no text node') }
+        /* 关键回归：选区被清掉后仍能批注 */
+        var tn2 = paras[1] ? textNodeOf(paras[1]) : null;
+        var mk2 = null;
+        if (tn2) {
+          var r2 = document.createRange(); r2.setStart(tn2, 0); r2.setEnd(tn2, Math.min(6, tn2.textContent.length));
+          var sel2 = window.getSelection(); sel2.removeAllRanges(); sel2.addRange(r2);
+          rdCaptureSelection();
+          sel2.removeAllRanges();  /* 模拟点击工具条时浏览器清空选区 */
+          mk2 = rdApply('b', false);
+        }
+        T('annotate-after-selection-lost', !!mk2, '这是旧版失败的场景');
+        var whole = paras[2] ? rdApply('p', true, paras[2]) : null;
+        T('annotate-whole-paragraph', !!whole);
+        T('note-popup-open', !!document.querySelector('.ur-note-pop'));
+        var st = (loadLS('rkUniOrig', {}) || {})[id];
+        T('notes-persisted', !!(st && st.notes && st.notes.length >= 3), 'notes=' + (st && st.notes ? st.notes.length : 0));
+        T('srcbar-present', !!byId('urFetchBtn'));
+        T('guide-present', !!byId('urGuideBtn'));
+        hideNotePop(); rdGuideClean();
+        if (rd.topic) { rdPersist(); byId('uniReader').classList.remove('on'); rd.topic = null }
+      }
+
+      /* 5. AI 面板 / 房间 DOM */
+      openAiPanel('ai');
+      T('ai-panel-open', byId('uniAiPanel').classList.contains('on'));
+      T('ai-input-present', !!byId('uniAiInput'));
+      T('ai-quick-buttons', byId('uniAiQuick').querySelectorAll('button').length >= 5,
+        'n=' + byId('uniAiQuick').querySelectorAll('button').length);
+      aiTab('room');
+      T('room-pane-open', !byId('uniRoomPane').hidden);
+      T('room-topics-rendered', document.querySelectorAll('#uniRoomTopics .rt').length > 0,
+        'n=' + document.querySelectorAll('#uniRoomTopics .rt').length);
+      T('room-live-badge', !!byId('uniRoomLive'));
+      hideAiPanel();
+
+      /* 6. 无报错检查 */
+      T('no-js-errors', (window.__rkErrs || []).length === 0, JSON.stringify((window.__rkErrs || []).slice(0, 3)));
+    } catch (e) {
+      T('selftest-crash', false, (e && e.message) || String(e));
+    }
+    var passN = out.filter(function (x) { return x.indexOf('PASS') === 0 }).length;
+    rkDiagLine('RESULT', passN + '/' + out.length + ' passed');
+    var pre = byId('rkSelfTest');
+    if (pre) pre.setAttribute('data-pass', String(passN)), pre.setAttribute('data-total', String(out.length));
+    document.title = 'SELFTEST ' + passN + '/' + out.length;
+    return out;
+  }
+  /* 画面钩子：?wx=aurora 直接切天气；?show=ai|room|reader|zhreader 直接开面板（截图为证用） */
+  (function v7UrlHooks() {
+    var qs = location.search || '';
+    var m = qs.match(/[?&]wx=([a-z]+)/i);
+    if (m && WEATHERS[m[1]]) setTimeout(function () { setWeather(m[1], true) }, 900);
+    var s = qs.match(/[?&]show=([a-z]+)/i);
+    if (s) setTimeout(function () {
+      var what = s[1];
+      if (what === 'ai') openAiPanel('ai');
+      else if (what === 'room') { openAiPanel('room'); setTimeout(function () { var t = document.querySelector('#uniRoomTopics .rt'); if (t) t.click() }, 1200); }
+      else if (what === 'reader') { var ts = (window.DEMO && window.DEMO.topics) || []; var l = Object.keys((window.S && window.S.learned) || {}); rdOpen(l.length ? l[0] : (ts[0] && ts[0].id)); }
+      else if (what === 'zhreader') {
+        fetch(apiURL('/api/zhihu/original?q=' + encodeURIComponent('费曼学习法真的有用吗'))).then(function (r) { return r.json() }).then(function (j) {
+          if (j && j.ok) { openReaderFromZhihu({ title: j.title, url: j.url, paras: j.paras, origin: j.origin }); setTimeout(function () { rdApply('y', true, byId('urBody').querySelectorAll('p.para')[0]) }, 600) }
+        }).catch(function () { });
+      }
+    }, 1600);
+    window.addEventListener('error', function (e) { (window.__rkErrs = window.__rkErrs || []).push(String(e.message)); });
+    window.addEventListener('unhandledrejection', function (e) { (window.__rkErrs = window.__rkErrs || []).push('rej:' + String(e.reason)) });
+    window.__rkErrs = window.__rkErrs || [];
+    if (qs.indexOf('selftest=1') >= 0) setTimeout(function () { try { rkSelftest() } catch (e) { rkDiagLine('FATAL', (e && e.message) || String(e)) } }, 2600);
+  })();
 })();

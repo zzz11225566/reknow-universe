@@ -104,9 +104,9 @@
     });
   }
 
-  /* ---------- 4. 天气变化 → 全局看山换动作 ---------- */
+  /* ---------- 4. 天气变化 → 全局看山换动作（v7：六种天气） ---------- */
   window.__rkOnWeather = function (key) {
-    var map = { sunny: 'wave', cloudy: 'sway', rain: 'dozing', snow: 'pc', aurora: 'idle' };
+    var map = { sunny: 'wave', cloudy: 'sway', rain: 'dozing', thunder: 'dribble', snow: 'pc', aurora: 'idle' };
     var img = document.querySelector('#foxBtn img');
     if (img) img.src = 'assets/' + (map[key] || 'idle') + '.gif';
   };
@@ -157,7 +157,11 @@
     }
     if (qs.indexOf('auto=uni') >= 0) {
       setTimeout(function () { if (window.showView) window.showView('uni'); }, 1200);
-      setTimeout(function () { if (window.ReckonUniverse && window.ReckonUniverse.setWeather) window.ReckonUniverse.setWeather('rain', true); }, 3200);
+      /* 截图/取证用：自动切雨夜演示过渡。
+         注意：若同时给了 ?wx=<天气>，则不要覆盖（v7：两者会打架，表现为 ?wx=aurora 被 3.2s 后的 rain 顶掉） */
+      if (!/[?&]wx=/.test(qs)) {
+        setTimeout(function () { if (window.ReckonUniverse && window.ReckonUniverse.setWeather) window.ReckonUniverse.setWeather('rain', true); }, 3200);
+      }
     }
   })();
 })();

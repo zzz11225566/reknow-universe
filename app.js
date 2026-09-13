@@ -863,3 +863,279 @@ function mmRefresh(t,hostId){
   if(hid!=="flowBody" && $(hid)){ $(hid).innerHTML = renderMindMap(t,hid); bindMindMap(t,hid); }
   else { renderFlow(); }   /* renderFlow -> rF4 内部已 bindMindMap 一次，勿重复绑定 */
 }
+
+/* ================================================================
+   v7 接入层（本段在文件最末，同名函数以后声明覆盖前声明的方式生效）
+   1) RKAPI：统一后端基址（file:// 打开时回落本机 8787；密钥只在服务端）
+   2) AI 抬杠：改为真实调用后端 /api/ai/debate（DeepSeek 优先，知乎直答兜底），
+      并把"贴合用户原话"作为硬约束写进服务端提示词
+   3) 拆解环节接入知乎搜索：可搜到原文、直接打开圈点批注、交给 AI 讲解
+   ================================================================ */
+var RKAPI = (function () {
+  function base() {
+    try {
+      var sv = JSON.parse(localStorage.getItem("rkUni6"));
+      if (sv && sv.apiBase) return String(sv.apiBase).replace(/\/+$/, "");
+    } catch (e) { }
+    if (location.protocol === "file:") return "http://127.0.0.1:8787";
+    return location.origin;
+  }
+  return {
+    base: base,
+    url: function (p) { return base() + p; },
+    get: function (p) { return fetch(base() + p).then(function (r) { return r.json() }); },
+    post: function (p, body) {
+      return fetch(base() + p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) })
+        .then(function (r) { return r.json() });
+    }
+  };
+})();
+window.RKAPI = RKAPI;
+
+/* 模型供应商徽标 */
+function rkPmk(p) {
+  var cls = p === "deepseek" ? "ds" : p === "zhida" ? "zh" : "local";
+  var nm = p === "deepseek" ? "DeepSeek" : p === "zhida" ? "知乎直答" : "本地兜底";
+  return ' <span class="pmk ' + cls + '">' + nm + '</span>';
+}
+
+/* ---------- AI 抬杠：贴合用户回答 ---------- */
+var __debateSayLocal = debateSay;              /* 保留纯本地的旧实现作为离线兜底 */
+var __debateRebuttals = debateRebuttals;       /* 本地话术库（拿不到模型时使用） */
+function rkDebateTopic(t) {
+  return {
+    title: t.title || t.q,
+    q: t.q,
+    core: t.core,
+    trap: trapOf(t),
+    blocks: (t.blocks || []).map(function (b) { return { tp: b.tp, text: b.text } })
+  };
+}
+function rkDebateFallback(t, db, round) {
+  var lib = __debateRebuttals(t, round >= 3 ? 1 : 0);
+  return { text: round >= 3 ? lib[1] : lib[0], provider: "local" };
+}
+debateSay = function (t) {
+  var ta = $("dbTa");
+  if (!ta) return;
+  var text = (ta.value || "").trim();
+  if (!text) { toast("先写两句，顶我一下"); return; }
+  var db = debateState(t);
+  if (db.busy) { toast("等 AI 把这一轮说完"); return; }
+  db.msgs.push({ role: "me", text: text });
+  sfx("pop");
+  var round = db.stage + 1;                    /* 1..3 */
+  if (db.stage === 0) db.a1 = text;
+  else if (db.stage === 1) db.a2 = text;
+  else if (db.stage >= 2) db.a2 = (db.a2 || "") + "；我坚持：" + text;
+  db.stage = Math.min(3, db.stage + 1);
+  db.busy = true;
+  db.err = "";
+  save();
+  renderFlow();
+  var history = db.msgs.slice(-6).map(function (m) { return { role: m.role === "me" ? "me" : "ai", text: m.text } });
+  RKAPI.post("/api/ai/debate", {
+    topic: rkDebateTopic(t),
+    userText: text,
+    intensity: db.intensity,
+    round: round,
+    final: round >= 3,
+    history: history
+  }).then(function (j) {
+    if (j && j.reply) {
+      db.msgs.push({ role: "ai", text: j.reply, provider: j.provider || "none" });
+      if (!j.ok && j.error) db.err = j.error;
+    } else {
+      var f = rkDebateFallback(t, db, round);
+      db.msgs.push({ role: "ai", text: f.text, provider: f.provider });
+      db.err = (j && j.error) || "后端未返回内容";
+    }
+  }).catch(function () {
+    var f = rkDebateFallback(t, db, round);
+    db.msgs.push({ role: "ai", text: f.text, provider: f.provider });
+    db.err = "连不上后端（node server.js）";
+  }).then(function () {
+    db.busy = false;
+    save();
+    renderFlow();
+  });
+};
+/* 重写渲染：AI 消息来自真实模型，带"正在抬杠"实时状态 */
+function renderDebate(t) {
+  var db = debateState(t);
+  var msgs = db.msgs.map(function (m) {
+    var badge = (m.role === "ai" && m.provider) ? rkPmk(m.provider) : "";
+    return '<div class="dmsg ' + (m.role === "me" ? "me" : "ai") + '">' + esc(m.text) + badge + '</div>';
+  }).join("");
+  var body = "";
+  if (db.busy) {
+    body = '<div class="dmsg ai busy">🛡️ 正在针对你这句话组织反驳…<span class="typing3"><i></i><i></i><i></i></span></div>';
+  } else if (db.stage === 0) {
+    body = '<div class="dmsg ai" style="margin-bottom:10px">🛡️ 我是你的「反对派」。别紧张，我反对你，是为了让你记得更牢——<b>AI 反对你，与 AI 开杠，可以强化学习和记忆</b>。<br>我会<b>揪着你自己的原话</b>来反驳你，所以别背原文，用大白话说。先来：这篇最核心的一句是什么？</div><textarea class="ta" id="dbTa" placeholder="我的理解是……"></textarea><div class="btnrow"><button class="btn purple" data-act="dbsay">说</button></div>';
+  } else if (db.stage === 1 || db.stage === 2) {
+    body = '<textarea class="ta" id="dbTa" placeholder="我的反驳是……（越具体，AI 越难反驳你）"></textarea><div class="btnrow"><button class="btn purple" data-act="dbsay">反驳</button></div>';
+  } else {
+    body = '<div class="btnrow"><button class="btn green big" id="dbDone">🤝 达成共识，生成图谱</button></div>';
+  }
+  var errLine = db.err ? '<div class="dim" style="font-size:.76rem;margin-top:8px">⚠️ ' + esc(db.err) + '（当前用的是本地兜底话术；启动 node server.js 并配置好密钥后即为真实模型）</div>' : '';
+  $("flowBody").innerHTML = '<div class="card" style="--c:var(--purple);--cs:rgba(124,92,255,.1)">' +
+    '<div class="ch-head"><h3>🛡️ AI 开杠 · 第 ' + (Math.min(db.stage + 1, 4)) + ' 回合</h3><span class="tag purple" style="color:var(--purple)">辩论强度</span></div>' +
+    '<div class="intensity" id="dbInt">' + INTENSITY.map(function (x) { return '<button class="' + (db.intensity === x[0] ? "on" : "") + '" data-i="' + x[0] + '" title="' + x[2] + '">' + x[1] + '</button>'; }).join("") + '</div>' +
+    '<div class="dim" style="font-size:.78rem;margin:-4px 0 9px">AI 会引用你原话里的用词来反驳（真实模型：<b>DeepSeek 优先</b>，知乎直答兜底）。</div>' +
+    '<div class="debate">' + msgs + body + '</div>' + errLine +
+    '<div class="btnrow"><button class="btn" data-act="backmode">← 换一种方式</button></div></div>';
+  $("dbInt").querySelectorAll("button").forEach(function (el) {
+    el.addEventListener("click", function () { if (db.busy) return; db.intensity = el.getAttribute("data-i"); sfx("click"); renderFlow(); });
+  });
+  $("flowBody").querySelector('[data-act="backmode"]').addEventListener("click", function () { S.mode = "choose"; renderFlow(); });
+  var say = $("flowBody").querySelector('[data-act="dbsay"]');
+  if (say) say.addEventListener("click", function () { debateSay(t); });
+  var done = $("dbDone");
+  if (done) done.addEventListener("click", function () { debateFinish(t); });
+  var ta = $("dbTa");
+  if (ta) ta.addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) debateSay(t); });
+}
+
+/* ---------- 拆解环节接入知乎搜索 ---------- */
+var RK_ZH = { tid: null, q: "", items: [], loading: false, error: "", src: "", searched: false };
+function rkZhSearch(q, cb) {
+  RK_ZH.loading = true; RK_ZH.error = ""; RK_ZH.q = q;
+  rkZhPaint();
+  RKAPI.get("/api/zhihu/search?q=" + encodeURIComponent(q) + "&count=8").then(function (j) {
+    RK_ZH.loading = false;
+    if (j && j.ok && j.items && j.items.length) {
+      RK_ZH.items = j.items; RK_ZH.src = "知乎开放平台 · 站内搜索"; RK_ZH.searched = true;
+    } else {
+      RK_ZH.items = []; RK_ZH.error = (j && j.error) || "没有搜到结果（换个关键词试试）";
+      RK_ZH.searched = true;
+      /* 后端起不来时，至少给出知乎站内搜索直达链接 */
+      RK_ZH.items = [{ title: "在知乎站内搜索「" + q + "」", url: "https://www.zhihu.com/search?type=content&q=" + encodeURIComponent(q), excerpt: "（后端未连接或未返回结果）点右边按钮直接在知乎里找这篇原文。", author: "", votes: 0, type: "" }];
+      RK_ZH.src = "本地降级 · 搜索直达";
+    }
+    rkZhPaint();
+    if (cb) cb();
+  }).catch(function () {
+    RK_ZH.loading = false;
+    RK_ZH.searched = true;
+    RK_ZH.src = "离线";
+    RK_ZH.error = "连不上后端：先运行 node server.js（密钥在 env 里，前端不持有密钥）";
+    RK_ZH.items = [{ title: "在知乎站内搜索「" + q + "」", url: "https://www.zhihu.com/search?type=content&q=" + encodeURIComponent(q), excerpt: "后端未启动。启动后这里会显示知乎开放平台返回的真实原文摘要，并能直接圈点批注。", author: "", votes: 0, type: "" }];
+    rkZhPaint();
+  });
+}
+function rkZhUse(item) {
+  var RU = window.ReckonUniverse;
+  if (!RU || !RU.openReaderFromZhihu) { toast("炼金宇宙还没加载好，稍等一下再点"); return }
+  var q = RK_ZH.q || (RK_ZH.tid ? (topicById(RK_ZH.tid) || {}).q : "") || item.title;
+  toast("正在拉取知乎原文…");
+  RKAPI.get("/api/zhihu/original?q=" + encodeURIComponent(q) + "&url=" + encodeURIComponent(item.url || ""))
+    .then(function (j) {
+      if (j && j.ok && j.paras && j.paras.length) {
+        RU.openReaderFromZhihu({ title: item.title || j.title, url: j.url || item.url, paras: j.paras, origin: j.origin });
+        toast("已拉取 " + j.paras.length + " 段知乎原文，可直接批注 ✅", true);
+      } else {
+        /* 拿不到正文：用搜索摘要当原文，保证"能批注"这件事不中断 */
+        var ex = (item.excerpt || "").split(/\n+/).filter(Boolean);
+        if (ex.length) {
+          RU.openReaderFromZhihu({ title: item.title || q, url: item.url, paras: ex, origin: "search-excerpt" });
+          toast("知乎未返回全文，已用搜索摘要作为可批注原文（点标题上的原链接看全文）", true);
+        } else {
+          toast("没拿到可用正文：" + ((j && (j.error || j.note)) || "知乎未返回正文"));
+          if (item.url) window.open(item.url, "_blank", "noopener");
+        }
+      }
+    })
+    .catch(function () {
+      if (item.url) window.open(item.url, "_blank", "noopener");
+      toast("后端未启动，已在知乎打开原文");
+    });
+}
+function rkZhPaint() {
+  var host = document.getElementById("rkZhStrip");
+  if (!host) return;
+  var body = host.querySelector(".zs-body");
+  var src = host.querySelector(".zs-src");
+  if (src) src.textContent = RK_ZH.src || "尚未检索";
+  var listEl = host.querySelector(".zh-list");
+  var qInput = host.querySelector("#rkZhQ");
+  if (qInput && document.activeElement !== qInput) qInput.value = RK_ZH.q;
+  if (RK_ZH.loading) { listEl.innerHTML = '<div class="zh-empty">正在向知乎开放平台检索…</div>'; return }
+  if (!RK_ZH.items.length) {
+    listEl.innerHTML = '<div class="zh-empty">' + (RK_ZH.error ? esc(RK_ZH.error) : "点「🔍 搜索知乎原文」，把这条收藏对应的知乎原文找出来 —— 找到后可以直接在上面圈点批注。") + '</div>';
+    return;
+  }
+  listEl.innerHTML = RK_ZH.items.map(function (it, i) {
+    var meta = [];
+    if (it.type) meta.push(it.type === "Answer" ? "回答" : it.type === "Article" ? "文章" : esc(it.type));
+    if (it.author) meta.push("作者：" + esc(it.author));
+    if (it.votes) meta.push("▲ " + fmtV(it.votes));
+    if (it.comments) meta.push("💬 " + it.comments);
+    return '<div class="zh-item"><div class="zt">' + (i + 1) + '. ' + esc(it.title || "") + '</div>' +
+      (meta.length ? '<div class="zm">' + meta.map(function (m) { return '<span>' + m + '</span>' }).join("") + '</div>' : '') +
+      '<div class="zx">' + esc(trim(it.excerpt || "", 220)) + '</div>' +
+      '<div class="za">' +
+      (it.url ? '<a href="' + esc(it.url) + '" target="_blank" rel="noopener">在知乎打开 ↗</a>' : '') +
+      '<button class="gold" data-zhuse="' + i + '">📖 用它做原文圈点批注</button>' +
+      '<button data-zhai="' + i + '">🤖 问小炼这篇讲什么</button>' +
+      '</div></div>';
+  }).join("");
+  Array.prototype.forEach.call(listEl.querySelectorAll("[data-zhuse]"), function (b) {
+    b.addEventListener("click", function () { rkZhUse(RK_ZH.items[Number(b.getAttribute("data-zhuse"))]); });
+  });
+  Array.prototype.forEach.call(listEl.querySelectorAll("[data-zhai]"), function (b) {
+    b.addEventListener("click", function () {
+      var it = RK_ZH.items[Number(b.getAttribute("data-zhai"))];
+      var RU = window.ReckonUniverse;
+      if (!RU || !RU.aiAsk) { toast("炼金宇宙的 AI 面板还没就绪，先进一次 🌌 炼金宇宙"); return }
+      if (!document.getElementById("uniShell").classList.contains("on") && window.showView) window.showView("uni");
+      setTimeout(function () {
+        RU.aiAsk("这是知乎上关于「" + (RK_ZH.q || "") + "」的一篇原文：\n" + trim(it.excerpt || it.title, 900) + "\n\n请用三句话讲清它的核心，并指出最容易被误读的一点。");
+      }, 700);
+    });
+  });
+}
+/* 把"知乎原文对照条"注入拆解页 */
+function rkZhStrip() {
+  var t = topicById(S.topicId);
+  var box = document.getElementById("flowBody");
+  if (!t || !box) return;
+  var old = document.getElementById("rkZhStrip");
+  if (old) old.remove();
+  if (RK_ZH.tid !== t.id) { RK_ZH.tid = t.id; RK_ZH.q = t.q; RK_ZH.items = []; RK_ZH.error = ""; RK_ZH.src = ""; RK_ZH.searched = false; }
+  var wrap = document.createElement("div");
+  wrap.className = "zh-strip"; wrap.id = "rkZhStrip";
+  wrap.innerHTML =
+    '<div class="zs-head"><b>🔍 知乎原文对照</b><span class="zs-src">尚未检索</span>' +
+    '<span class="dim" style="font-size:.76rem;margin-left:auto">用知乎开放平台找原文 → 直接在原文上圈点批注 / 让 AI 讲解</span></div>' +
+    '<div class="zs-body"><div class="zs-row">' +
+    '<input id="rkZhQ" placeholder="搜索关键词（默认是这篇的标题）" value="' + esc(RK_ZH.q || t.q) + '">' +
+    '<button class="primary" id="rkZhGo">🔍 搜索知乎原文</button>' +
+    '<button id="rkZhRead">📥 直接拉取本文原文</button>' +
+    '</div><div class="zh-list"></div>' +
+    '<div class="zh-note">原文来自知乎开放平台（developer.zhihu.com）。搜索走站内搜索接口，正文按段落切分以便批注；若接口未返回全文，会退化为搜索直达链接。</div></div>';
+  /* 拆解步骤（第 2 步）放在最上面，其它步骤放最后 */
+  if (S.step === 2) box.insertBefore(wrap, box.firstChild); else box.appendChild(wrap);
+  wrap.querySelector("#rkZhGo").addEventListener("click", function () {
+    var q = (wrap.querySelector("#rkZhQ").value || "").trim() || t.q;
+    rkZhSearch(q);
+  });
+  wrap.querySelector("#rkZhQ").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); wrap.querySelector("#rkZhGo").click(); } });
+  wrap.querySelector("#rkZhRead").addEventListener("click", function () {
+    var btn = wrap.querySelector("#rkZhRead");
+    btn.disabled = true; btn.textContent = "正在拉取…";
+    RKAPI.get("/api/zhihu/original?q=" + encodeURIComponent(t.q)).then(function (j) {
+      btn.disabled = false; btn.textContent = "📥 直接拉取本文原文";
+      rkZhUse({ title: (j && j.title) || t.q, url: (j && j.url) || "", excerpt: (j && j.paras || []).join("\n") });
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = "📥 直接拉取本文原文";
+      toast("连不上后端：先运行 node server.js");
+    });
+  });
+  rkZhPaint();
+}
+/* 包装 renderFlow：每次渲染后把知乎对照条贴回去（失败不影响主流程） */
+var __renderFlowV7 = renderFlow;
+renderFlow = function () {
+  __renderFlowV7.apply(null, arguments);
+  try { rkZhStrip(); } catch (e) { }
+};

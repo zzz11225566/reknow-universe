@@ -7,6 +7,10 @@ build/
 .env
 .env.local
 .env.*.local
+# v7：本项目的密钥文件就叫 env（没有点），漏掉它会把知乎/DeepSeek 密钥推到 GitHub
+env
+env.*
+!env.example
 *.key
 *.pem
 
@@ -62,3 +66,10 @@ _xpcheck*
 _v2verify*
 _v2_*.png
 _syntax_port.cjs
+
+# v7：npm 本地缓存（沙箱里只能写到工作区）
+.npm-cache/
+# v7：探针/临时验证脚本的 scratch 产物
+_probe_*.cjs
+.rk_edge_*
+_crop_*.png
