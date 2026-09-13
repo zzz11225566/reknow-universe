@@ -1154,7 +1154,17 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 #authMe .me-row{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
 #authMe .me-ava{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#0f88eb,#7c5cff);color:#fff;display:grid;place-items:center;font-size:1.15rem;font-weight:700}
 #authMe .me-name{font-weight:700}
-#authMe .me-ts{font-size:.78rem;color:#8a94a2}
+/* ---- 9. 炼金配方设置页（第 2.5 步） ---- */
+.rcp-sec{border:1px solid #e6e9ef;border-radius:14px;padding:14px 16px;margin-top:12px;background:#fbfbfc}
+.rcp-sec h4{margin:0 0 8px;font-size:.95rem}
+.rcp-sec .hint{font-size:.76rem;color:#8a94a2;line-height:1.6;margin-top:6px}
+.rcp-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:.9rem;flex-wrap:wrap}
+.rcp-row label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.rcp-row select,#rcpAiFields input{padding:7px 10px;border-radius:9px;border:1px solid #d8dde5;font-size:.88rem;outline:none}
+.rcp-row select:focus,#rcpAiFields input:focus{border-color:#0f88eb}
+#rcpAiFields{margin-top:8px;display:grid;gap:8px}
+#rcpPipeline .rcp-row label{border:1px solid #e0e4ea;border-radius:9px;padding:5px 10px;background:#fff}
+.rcp-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -1173,6 +1183,7 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
       <span class="stat"><span>🔥</span><span id="streakTxt">连炼 0 篇</span></span>
       <button class="icon-btn" id="btnSnd" title="音效开关">🔊</button>
       <button class="icon-btn" id="btnHelp" title="新手引导">？</button>
+      <button class="icon-btn" id="btnRecipe" title="炼金配方：定制你的 ReKnow">⚗️</button>
       <button class="icon-btn" id="btnReset" title="清空进度">↺</button>
       <button class="acc" id="btnAuth" title="账户与云端同步"><span class="u" id="authAva">游</span><span id="authLabel">游客模式 · 点击登录</span></button>
     </div>
@@ -1267,6 +1278,63 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
     <div class="btnrow" style="gap:8px"><button class="btn primary" id="meSync" style="flex:1">↻ 立即同步</button><button class="btn" id="meLogout" style="flex:1">退出登录</button></div>
   </div>
   <div class="btnrow" style="justify-content:center;margin-top:10px"><button class="btn" id="authClose">关闭</button></div>
+</div></div>
+
+<!-- 炼金配方设置页（第 2.5 步） -->
+<div class="overlay" id="ovRecipe"><div class="obox" style="max-width:560px;max-height:86vh;overflow:auto">
+  <h3 style="margin:0 0 2px">⚗️ 炼金配方</h3>
+  <p class="auth-sub">你的全部使用偏好浓缩成一份配方，产品按它运转。配方随账户云端同步，也可导出成文件分享给朋友。</p>
+
+  <div class="rcp-sec"><h4>📥 进库规则</h4>
+    <div class="rcp-row"><label><input type="checkbox" id="rcpManual"> 手动挑选</label><label><input type="checkbox" id="rcpAiFilter"> AI 粗筛推荐</label></div>
+    <div class="hint">收藏夹进宇宙的两步流程，每步可单独开关：全手动、全 AI、或两者叠加。</div>
+  </div>
+
+  <div class="rcp-sec"><h4>🔬 默认拆解档位</h4>
+    <div class="rcp-row"><select id="rcpDepth">
+      <option value="shallow">浅尝 · 3 个知识点快速过</option>
+      <option value="standard">标准 · 结构化拆解</option>
+      <option value="deep">深挖 · 第一性原理追到底</option>
+    </select></div>
+    <div class="hint">深挖档下，AI 开杠会强制追问「为什么成立」。单篇可在学习页小齿轮临时换档。</div>
+  </div>
+
+  <div class="rcp-sec" id="rcpPipeline"><h4>🧩 流程编排</h4>
+    <div class="rcp-row">
+      <label><input type="checkbox" data-step="1"> ① 选料</label>
+      <label><input type="checkbox" data-step="2"> ② 拆解</label>
+      <label><input type="checkbox" data-step="3"> ③ 学懂</label>
+      <label><input type="checkbox" data-step="4"> ④ 图谱</label>
+      <label><input type="checkbox" data-step="5"> ⑤ 回流</label>
+    </div>
+    <div class="hint">取消勾选 = 从主流程收起（软关闭，不删数据）；随时回来勾上即还原。</div>
+  </div>
+
+  <div class="rcp-sec"><h4>🤖 AI 模型</h4>
+    <div class="rcp-row"><select id="rcpAiProvider">
+      <option value="default">官方默认链（知乎直答 / DeepSeek）</option>
+      <option value="custom">自配外部模型（OpenAI 兼容 API）</option>
+    </select></div>
+    <div id="rcpAiFields" style="display:none">
+      <input id="rcpAiBase" placeholder="API 地址，如 https://api.deepseek.com">
+      <input id="rcpAiModel" placeholder="模型名，如 deepseek-chat">
+      <input id="rcpAiKey" type="password" placeholder="你的 API Key（只存你自己的账户，绝不入前端代码库）">
+    </div>
+    <div class="hint">自配后 AI 问答与开杠将走你的模型；Key 随配方加密存于你的云端账户。</div>
+  </div>
+
+  <div class="rcp-sec"><h4>⏰ 复习节奏</h4>
+    <div class="rcp-row"><label><input type="checkbox" id="rcpReview"> 启用间隔重复复习（1/3/7/15/30 天）</label></div>
+    <div class="hint">是否复习完全由你决定；开启后首页出现「今日复习」架。单篇可在学习页小齿轮里单独关闭。</div>
+  </div>
+
+  <div class="rcp-btns">
+    <button class="btn primary" id="rcpSave" style="flex:1">💾 保存配方</button>
+    <button class="btn" id="rcpExport">📤 导出</button>
+    <button class="btn" id="rcpImport">📥 导入</button>
+    <button class="btn" id="rcpReset">↺ 恢复默认</button>
+  </div>
+  <div class="btnrow" style="justify-content:center;margin-top:10px"><button class="btn" id="rcpClose">关闭</button></div>
 </div></div>
 
 <div class="toast-wrap" id="toasts" style="position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:270;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none"></div>

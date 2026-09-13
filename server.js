@@ -477,11 +477,43 @@ async function llmOnce(provider, messages, opts) {
     if (!reply) return { ok: false, error: '知乎直答返回为空' }
     return { ok: true, provider: 'zhida', model: (r.json && r.json.model) || CFG.zhidaFast, reply: String(reply).trim(), reasoning: c.message.reasoning_content || '' }
   }
+  if (provider === 'custom') {
+    /* BYOK：用户在「炼金配方」里自配的外部开源模型（OpenAI 兼容格式） */
+    const cu = opts.custom || {}
+    if (!cu.key || !cu.baseUrl) return { ok: false, error: '自配模型缺少 baseUrl 或 key' }
+    const model = cu.model || 'gpt-4o-mini'
+    const r = await fetchJSON(cu.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cu.key },
+      body: JSON.stringify({
+        model: model, messages: messages,
+        temperature: opts.temperature != null ? opts.temperature : 0.9,
+        max_tokens: budgetFor(model, opts.maxTokens),
+        stream: false
+      })
+    }, opts.timeoutMs || (isReasoningModel(model) ? 90000 : 45000))
+    if (r.status !== 200) return { ok: false, error: '自配模型 ' + r.status + '：' + ((r.json && r.json.error && r.json.error.message) || String(r.text).slice(0, 200)) }
+    const c = r.json && r.json.choices && r.json.choices[0]
+    const reply = c && c.message && c.message.content
+    if (!reply) return { ok: false, error: '自配模型返回为空' }
+    return { ok: true, provider: 'custom', model: (r.json && r.json.model) || model, reply: String(reply).trim(), usage: r.json && r.json.usage, reasoning: (c && c.message && c.message.reasoning_content) || '' }
+  }
   return { ok: false, error: '没有可用的模型提供商（DeepSeek key 未配置或格式非法，知乎 token 也未配置）' }
+}
+/* BYOK 入参消毒：只接受 http(s) 地址 + 有限长度，防 SSRF 扫内网 */
+function sanitizeCustomAI(ai) {
+  if (!ai || typeof ai !== 'object') return null
+  const baseUrl = String(ai.baseUrl || '').trim()
+  const key = String(ai.key || '').trim()
+  const model = String(ai.model || '').trim().slice(0, 80)
+  if (!key || !baseUrl) return null
+  if (!/^https?:\/\/[^/\s]+$/.test(baseUrl) || baseUrl.length > 200) return null
+  if (/127\.|localhost|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.0\.0\.0/i.test(baseUrl)) return null
+  return { baseUrl: baseUrl, key: key.slice(0, 200), model: model }
 }
 async function llmChat(messages, opts) {
   opts = opts || {}
-  const order = opts.order || providerOrder('chat')
+  const order = (opts.custom && opts.custom.key) ? ['custom'] : (opts.order || providerOrder('chat'))
   const errs = []
   for (const p of order) {
     if (p === 'local') break
@@ -760,7 +792,7 @@ setInterval(function () {
    ============================================================ */
 async function streamLLM(res, messages, opts) {
   opts = opts || {}
-  const order = providerOrder(opts.mode || 'chat').filter(function (p) { return p !== 'local' })
+  const order = (opts.custom && opts.custom.key) ? ['custom'] : providerOrder(opts.mode || 'chat').filter(function (p) { return p !== 'local' })
   cors(res)
   res.writeHead(200, {
     'Content-Type': 'text/event-stream; charset=utf-8',
@@ -776,18 +808,28 @@ async function streamLLM(res, messages, opts) {
   }
   for (const p of order) {
     let upstream = null
+    const cu = p === 'custom' ? (opts.custom || {}) : null
     const dsModel = p === 'deepseek' ? (opts.deepseekModel || opts.model || CFG.deepseekModel) : null
+    const cuModel = cu ? (cu.model || 'gpt-4o-mini') : null
     const body = p === 'deepseek'
       ? {
         model: dsModel, messages: messages,
         temperature: opts.temperature != null ? opts.temperature : 0.9,
         max_tokens: budgetFor(dsModel, opts.maxTokens || 800), stream: true
       }
-      : { model: CFG.zhidaFast, messages: messages, stream: true }
-    const url = p === 'deepseek' ? CFG.deepseekBase + '/chat/completions' : CFG.zhihuBase + '/v1/chat/completions'
+      : cu
+        ? {
+          model: cuModel, messages: messages,
+          temperature: opts.temperature != null ? opts.temperature : 0.9,
+          max_tokens: budgetFor(cuModel, opts.maxTokens || 800), stream: true
+        }
+        : { model: CFG.zhidaFast, messages: messages, stream: true }
+    const url = p === 'deepseek' ? CFG.deepseekBase + '/chat/completions' : cu ? cu.baseUrl.replace(/\/+$/, '') + '/chat/completions' : CFG.zhihuBase + '/v1/chat/completions'
     const headers = p === 'deepseek'
       ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CFG.deepseekKey }
-      : zhihuHeaders()
+      : cu
+        ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cu.key }
+        : zhihuHeaders()
     try {
       upstream = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) })
       if (upstream.status !== 200) {
@@ -800,7 +842,7 @@ async function streamLLM(res, messages, opts) {
       sse({ type: 'warn', provider: p, error: p + ' 连接失败：' + ((e && e.message) || e) })
       continue
     }
-    sse({ type: 'start', provider: p, model: p === 'deepseek' ? dsModel : CFG.zhidaFast })
+    sse({ type: 'start', provider: p, model: p === 'deepseek' ? dsModel : (cu ? cuModel : CFG.zhidaFast) })
     const reader = upstream.body.getReader()
     const dec = new TextDecoder('utf-8')
     let buf = ''
@@ -1079,7 +1121,7 @@ const server = http.createServer(async function (req, res) {
       ;(Array.isArray(b.messages) ? b.messages : []).slice(-14).forEach(function (m) {
         if (m && m.role && m.content) msgs.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) })
       })
-      return streamLLM(res, msgs, { temperature: b.temperature, maxTokens: b.maxTokens })
+      return streamLLM(res, msgs, { temperature: b.temperature, maxTokens: b.maxTokens, custom: sanitizeCustomAI(b.ai) })
     }
     if ((p === '/api/ai/chat' || p === '/api/ai/ask') && req.method === 'POST') {
       const b = await readBody(req)
@@ -1092,7 +1134,7 @@ const server = http.createServer(async function (req, res) {
         if (m && m.role && m.content) msgs.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) })
       })
       if (!msgs.some(function (m) { return m.role === 'user' })) return sendJSON(res, 400, { ok: false, error: '缺少用户消息' })
-      const r = await llmChat(msgs, { temperature: 0.85, maxTokens: b.maxTokens || 800 })
+      const r = await llmChat(msgs, { temperature: 0.85, maxTokens: b.maxTokens || 800, custom: sanitizeCustomAI(b.ai) })
       if (r.ok) return sendJSON(res, 200, { ok: true, provider: r.provider, model: r.model, reply: r.reply, usage: r.usage || null })
       return sendJSON(res, 200, { ok: false, provider: 'none', reply: localFallback('chat', { title: (b.context && b.context[0]) || '' }), error: r.error })
     }
@@ -1124,10 +1166,12 @@ const server = http.createServer(async function (req, res) {
       const msgs = [
         { role: 'system', content: SYSTEM_DEBATE },
         { role: 'system', content: '本篇背景（供你判断他有没有踩坑，不要在回答里整段复述）：\n' + (ctx.join('\n') || '（无）') },
+        /* 炼金配方·深挖档：开杠时强制追问"为什么成立"（第一性原理） */
+        b.depth === 'deep' ? { role: 'system', content: '用户处于「深挖」拆解档位：你的反驳必须把他逼到原理层——追问该观点为什么成立、依赖什么前提、换一个前提是否还成立。' } : null,
         { role: 'user', content: ask }
-      ]
+      ].filter(Boolean)
       /* 抬杠固定走 DeepSeek 优先链（问答走知乎直答，见 providerOrder） */
-      const r = await llmChat(msgs, { temperature: 1.0, maxTokens: 400, deepseekModel: CFG.deepseekDebateModel, order: providerOrder('debate') })
+      const r = await llmChat(msgs, { temperature: 1.0, maxTokens: 400, deepseekModel: CFG.deepseekDebateModel, order: providerOrder('debate'), custom: sanitizeCustomAI(b.ai) })
       if (r.ok) return sendJSON(res, 200, { ok: true, provider: r.provider, model: r.model, reply: r.reply, round: round, final: isLast })
       return sendJSON(res, 200, { ok: false, provider: 'none', reply: localFallback('debate', { userText: userText, title: topic.title }), error: r.error })
     }

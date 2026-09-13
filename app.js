@@ -48,7 +48,7 @@ function toast(msg,good){ var w=$("toasts"),d=document.createElement("div"); d.s
 function confetti(){ var box=$("confetti"),colors=["#0f88eb","#e6a23c","#1fa15f","#e05a8a","#5b6ef5","#ffb347"]; for(var i=0;i<64;i++){ var s=document.createElement("span"); s.style.left=Math.random()*100+"%"; s.style.background=colors[i%colors.length]; s.style.animationDuration=(1.6+Math.random()*1.6)+"s"; s.style.animationDelay=(Math.random()*.35)+"s"; box.appendChild(s); } setTimeout(function(){box.innerHTML="";},3600); }
 
 /* ---------- 炉火/成就 ---------- */
-var LEVELS=[{name:"见习学徒",need:0},{name:"炼金学徒",need:200},{name:"炼金师",need:600},{name:"老炼金师",need:1200},{name:"点石成金者",need:2200}];
+var LEVELS=[{name:"见习学徒",need:0},{name:"炼金学徒",need:200},{name:"炼金师",need:600},{name:"老炼金师",need:1300},{name:"点石成金者",need:2600},{name:"炼金宗师",need:5000},{name:"宇宙贤者",need:9000}]; /* 炼金配方：升级所需经验逐级递增（≈1.8x），前期快、后期每一级都是真积累 */
 var ACH=[ {id:"first",ico:"✨",t:"第一次学懂",cond:function(){return learnedCount()>=1;}},{id:"three",ico:"🔥",t:"三炉连开",cond:function(){return learnedCount()>=3;}},{id:"six",ico:"🎆",t:"炉火纯青",cond:function(){return learnedCount()>=6;}},{id:"custom",ico:"🧪",t:"自选炉",cond:function(){return customCount()>=1;}},{id:"poly",ico:"🎨",t:"跨圈学习者",cond:function(){return catSet()>=3;}},{id:"spider",ico:"🕸",t:"织网者",cond:function(){return crossPairs().length>=2;}} ];
 function levelInfo(){ var lv=LEVELS[0]; for(var i=0;i<LEVELS.length;i++){ if(S.xp>=LEVELS[i].need) lv=LEVELS[i]; else break; } var next=null; for(var j=0;j<LEVELS.length;j++) if(LEVELS[j].need>S.xp){next=LEVELS[j];break;} var cur=S.xp-lv.need,span=next?next.need-lv.need:1; return {lv:lv,pct:next?Math.min(100,cur/span*100):100,txt:S.xp}; }
 function paintStats(){ var li=levelInfo(); $("lvTxt").textContent=li.lv.name; $("xpTxt").textContent=li.txt+" 炉火"; $("xpBar").style.width=li.pct+"%"; $("streakTxt").textContent="连炼 "+S.streak+" 篇"; }
@@ -1307,3 +1307,285 @@ var __saveCustomV8 = saveCustom;
 saveCustom = function () { __saveCustomV8.apply(null, arguments); try { RKAuth.schedulePush(); } catch (e) { } };
 
 RKAuth.boot();
+
+
+/* ================================================================
+   v8.5 · 炼金配方系统（路线图第 2.5 步）
+   rkRecipe = {
+     intake:  { manualPick:true, aiFilter:true }   进库两步，各自开关
+     depth:   { level:"standard", perTopic:{} }     shallow|standard|deep，可按篇覆盖
+     pipeline:[1,2,3,4,5]                           启用的流程步骤（软关闭：收起不删除，可还原）
+     ai:      { provider:"default", baseUrl:"", model:"", key:"" }  BYOK 自配模型（OpenAI 兼容）
+     review:  { enabled:false, perTopic:{} }        复习总开关 + 按主题安排
+   }
+   同步：rkRecipe 已在云端同步白名单内，保存即随 RKAuth 推送，换设备自动随行。
+   ================================================================ */
+var RKRecipe = (function () {
+  var KEY = "rkRecipe";
+  var DEFAULTS = {
+    intake: { manualPick: true, aiFilter: true },
+    depth: { level: "standard", perTopic: {} },
+    pipeline: [1, 2, 3, 4, 5],
+    ai: { provider: "default", baseUrl: "", model: "", key: "" },
+    review: { enabled: false, perTopic: {} }
+  };
+  function merge(base, over) {
+    var out = {};
+    for (var k in base) {
+      if (base[k] && typeof base[k] === "object" && !Array.isArray(base[k])) out[k] = merge(base[k], (over && over[k]) || {});
+      else out[k] = (over && over[k] !== undefined) ? over[k] : base[k];
+    }
+    return out;
+  }
+  function get() {
+    try { return merge(DEFAULTS, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { return merge(DEFAULTS, {}); }
+  }
+  function save(r) {
+    try { localStorage.setItem(KEY, JSON.stringify(r)); } catch (e) { }
+    try { RKAuth.schedulePush(); } catch (e) { }
+  }
+  function set(path, v) { /* path: "depth.level" 形式 */
+    var r = get(), keys = path.split("."), o = r;
+    for (var i = 0; i < keys.length - 1; i++) { o = o[keys[i]] = o[keys[i]] || {}; }
+    o[keys[keys.length - 1]] = v; save(r); return r;
+  }
+  function depthOf(topicId) {
+    var r = get();
+    return (topicId && r.depth.perTopic && r.depth.perTopic[topicId]) || r.depth.level || "standard";
+  }
+  function exportJSON() { return JSON.stringify(get(), null, 2); }
+  function importJSON(txt) {
+    var j = JSON.parse(txt); /* 抛错由调用方捕获 */
+    var r = merge(DEFAULTS, j); save(r); return r;
+  }
+  return { get: get, save: save, set: set, depthOf: depthOf, exportJSON: exportJSON, importJSON: importJSON, DEFAULTS: DEFAULTS };
+})();
+window.RKRecipe = RKRecipe;
+
+/* BYOK 注入：配方里配了自配模型时，所有 /api/ai/* 非流式调用自动带上（流式小窗沿用默认链，见指导文档） */
+var __rkPostV85 = RKAPI.post;
+RKAPI.post = function (p, body) {
+  try {
+    var rc = RKRecipe.get();
+    if (rc.ai.provider === "custom" && rc.ai.key && rc.ai.baseUrl && /^\/api\/ai\//.test(p)) {
+      body = body || {};
+      body.ai = { baseUrl: rc.ai.baseUrl, model: rc.ai.model, key: rc.ai.key };
+    }
+    if (p === "/api/ai/debate") { body = body || {}; body.depth = RKRecipe.depthOf(S.topicId); }
+  } catch (e) { }
+  return __rkPostV85.call(RKAPI, p, body);
+};
+
+/* 流程编排：被软关闭的步骤从步骤条收起（不删除），S.step 落在关闭步骤时自动落到最近启用步骤 */
+function rkPipeEnabled(n) { return RKRecipe.get().pipeline.indexOf(n) >= 0; }
+var __paintStepsV85 = paintSteps;
+paintSteps = function () {
+  __paintStepsV85.apply(null, arguments);
+  document.querySelectorAll("#stepsbar .sp").forEach(function (el) {
+    var n = +el.getAttribute("data-step");
+    el.style.display = rkPipeEnabled(n) ? "" : "none";
+  });
+  var bar = document.getElementById("stepsbar");
+  if (bar && !document.getElementById("spPipeMgr")) {
+    var gear = document.createElement("button");
+    gear.className = "sp"; gear.id = "spPipeMgr"; gear.title = "流程管理：关闭的步骤随时可在这里还原";
+    gear.innerHTML = '<span class="i">⚙️</span>流程';
+    gear.onclick = function () { RKRecipeUI.open("pipeline"); };
+    bar.appendChild(gear);
+  }
+};
+var __renderFlowV85 = renderFlow;
+renderFlow = function () {
+  if (!rkPipeEnabled(S.step)) {
+    var en = RKRecipe.get().pipeline;
+    if (en.length) { S.step = en.reduce(function (best, n) { return Math.abs(n - S.step) < Math.abs(best - S.step) ? n : best; }, en[0]); }
+  }
+  __renderFlowV85.apply(null, arguments);
+};
+
+/* 复习：启用后首页顶部出现「🔁 今日复习」架（1/3/7 天间隔，基于学会时间） */
+function rkReviewDue() {
+  var r = RKRecipe.get(); if (!r.review.enabled) return [];
+  var now = Date.now(), GAP = [1, 3, 7, 15, 30], out = [];
+  for (var id in S.learned) {
+    if (r.review.perTopic[id] === false) continue; /* 该篇被用户单独关掉 */
+    var rec = S.records[id]; if (!rec || !rec.ts) continue;
+    var days = (now - new Date(rec.ts).getTime()) / 86400000;
+    var dueStage = 0;
+    for (var i = 0; i < GAP.length; i++) if (days >= GAP[i]) dueStage = i + 1;
+    if (dueStage > 0) {
+      var last = (S.reviewLog && S.reviewLog[id]) || 0;
+      var lastStage = last.stage || 0;
+      if (dueStage > lastStage) { var t = topicById(id); if (t) out.push({ t: t, stage: dueStage }); }
+    }
+  }
+  return out;
+}
+var __renderHomeV85 = renderHome;
+renderHome = function () {
+  __renderHomeV85.apply(null, arguments);
+  var due = rkReviewDue();
+  var host = document.getElementById("view-home"); if (!host) return;
+  var old = document.getElementById("rkReviewShelf"); if (old) old.remove();
+  if (!due.length) return;
+  var shelf = document.createElement("div");
+  shelf.className = "cat-shelf"; shelf.id = "rkReviewShelf";
+  shelf.innerHTML = '<div class="cs-head"><b>🔁 今日复习</b><span class="dim" style="font-size:.8rem">按你的配方安排 · 间隔重复（1/3/7/15/30 天）</span></div>' +
+    '<div class="cs-row">' + due.map(function (d) {
+      return '<div class="tcard" data-rv="' + d.t.id + '"><div class="tc-top"><b>' + esc(trim(d.t.title || d.t.q, 20)) + '</b></div>' +
+        '<div class="dim" style="font-size:.78rem;margin-top:4px">第 ' + d.stage + ' 轮复习 · 点开快速过一遍</div></div>';
+    }).join("") + '</div>';
+  host.insertBefore(shelf, host.firstChild);
+  shelf.querySelectorAll("[data-rv]").forEach(function (el) {
+    el.addEventListener("click", function () {
+      var id = el.getAttribute("data-rv");
+      S.reviewLog = S.reviewLog || {};
+      var due0 = rkReviewDue().filter(function (d) { return d.t.id === id; })[0];
+      S.reviewLog[id] = { ts: Date.now(), stage: due0 ? due0.stage : 1 };
+      save();
+      enterFlow(id);
+    });
+  });
+};
+
+/* 设置页 UI（全局配方管理）+ 本篇小齿轮 */
+var RKRecipeUI = (function () {
+  function open(sec) {
+    paint();
+    document.getElementById("ovRecipe").classList.add("on");
+    if (sec === "pipeline") { var el = document.getElementById("rcpPipeline"); if (el) el.scrollIntoView({ block: "center" }); }
+  }
+  function paint() {
+    var r = RKRecipe.get();
+    document.getElementById("rcpManual").checked = !!r.intake.manualPick;
+    document.getElementById("rcpAiFilter").checked = !!r.intake.aiFilter;
+    document.getElementById("rcpDepth").value = r.depth.level;
+    /* 流程复选 */
+    document.querySelectorAll("#rcpPipeline input[data-step]").forEach(function (el) {
+      el.checked = r.pipeline.indexOf(+el.getAttribute("data-step")) >= 0;
+    });
+    document.getElementById("rcpAiProvider").value = r.ai.provider;
+    document.getElementById("rcpAiFields").style.display = r.ai.provider === "custom" ? "" : "none";
+    document.getElementById("rcpAiBase").value = r.ai.baseUrl || "";
+    document.getElementById("rcpAiModel").value = r.ai.model || "";
+    document.getElementById("rcpAiKey").value = r.ai.key || "";
+    document.getElementById("rcpReview").checked = !!r.review.enabled;
+  }
+  function collect() {
+    var r = RKRecipe.get();
+    r.intake.manualPick = document.getElementById("rcpManual").checked;
+    r.intake.aiFilter = document.getElementById("rcpAiFilter").checked;
+    r.depth.level = document.getElementById("rcpDepth").value;
+    var pipe = [];
+    document.querySelectorAll("#rcpPipeline input[data-step]").forEach(function (el) {
+      if (el.checked) pipe.push(+el.getAttribute("data-step"));
+    });
+    if (!pipe.length) { toast("流程至少保留一步"); return null; }
+    r.pipeline = pipe;
+    r.ai.provider = document.getElementById("rcpAiProvider").value;
+    r.ai.baseUrl = document.getElementById("rcpAiBase").value.trim();
+    r.ai.model = document.getElementById("rcpAiModel").value.trim();
+    r.ai.key = document.getElementById("rcpAiKey").value.trim();
+    r.review.enabled = document.getElementById("rcpReview").checked;
+    return r;
+  }
+  function bind() {
+    var btn = document.getElementById("btnRecipe");
+    if (btn) btn.addEventListener("click", function () { open(); });
+    document.getElementById("rcpClose").addEventListener("click", function () { document.getElementById("ovRecipe").classList.remove("on"); });
+    document.getElementById("rcpAiProvider").addEventListener("change", function () {
+      document.getElementById("rcpAiFields").style.display = this.value === "custom" ? "" : "none";
+    });
+    document.getElementById("rcpSave").addEventListener("click", function () {
+      var r = collect(); if (!r) return;
+      RKRecipe.save(r);
+      document.getElementById("ovRecipe").classList.remove("on");
+      toast("配方已保存 ✅" + (RKAuth.loggedIn() ? "（已同步云端）" : "（本机）"), true);
+      if (S.view === "flow") renderFlow(); else if (S.view === "home") renderHome();
+    });
+    document.getElementById("rcpExport").addEventListener("click", function () {
+      var blob = new Blob([RKRecipe.exportJSON()], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "recknow-recipe.json"; a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+      toast("配方已导出，可以分享给朋友 🎁", true);
+    });
+    document.getElementById("rcpImport").addEventListener("click", function () {
+      var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json";
+      inp.onchange = function () {
+        var f = inp.files[0]; if (!f) return;
+        var rd = new FileReader();
+        rd.onload = function () {
+          try { RKRecipe.importJSON(String(rd.result)); paint(); toast("配方已导入 🧪", true); if (S.view === "home") renderHome(); }
+          catch (e) { toast("配方文件无法识别"); }
+        };
+        rd.readAsText(f);
+      };
+      inp.click();
+    });
+    document.getElementById("rcpReset").addEventListener("click", function () {
+      if (!confirm("恢复默认配方？你的自定义项会被清空。")) return;
+      RKRecipe.save(JSON.parse(JSON.stringify(RKRecipe.DEFAULTS))); paint(); toast("已恢复默认配方");
+    });
+  }
+  return { open: open, bind: bind };
+})();
+window.RKRecipeUI = RKRecipeUI;
+RKRecipeUI.bind();
+
+
+/* ---- 本篇小齿轮：学习页头部 ⚙️（本篇档位换档 + 本篇复习开关，写回配方） ---- */
+var __renderFlowGear = renderFlow;
+renderFlow = function () {
+  __renderFlowGear.apply(null, arguments);
+  var row = document.querySelector(".flow-head .fh-row1");
+  if (!row) return;
+  var g = document.getElementById("rkTopicGear");
+  if (!g) {
+    g = document.createElement("button");
+    g.id = "rkTopicGear"; g.className = "icon-btn"; g.title = "本篇设置（只影响当前这篇）";
+    g.style.marginLeft = "auto"; g.textContent = "⚙️";
+    g.addEventListener("click", function () {
+      var p = document.getElementById("rkTopicGearPop");
+      if (p) { p.remove(); return; }
+      var r = RKRecipe.get(), tid = S.topicId;
+      var cur = (r.depth.perTopic && r.depth.perTopic[tid]) || "";
+      var rvOn = !(r.review.perTopic && r.review.perTopic[tid] === false);
+      p = document.createElement("div");
+      p.id = "rkTopicGearPop";
+      p.style.cssText = "position:absolute;top:44px;right:0;z-index:60;background:#fff;border:1px solid #e2e5ea;border-radius:14px;box-shadow:0 12px 32px rgba(20,30,60,.16);padding:14px 16px;min-width:230px";
+      p.innerHTML = '<b style="font-size:.9rem">⚙️ 本篇设置</b>' +
+        '<div style="margin-top:10px;font-size:.82rem;color:#5a6472">本篇拆解档位</div>' +
+        '<select id="rkGearDepth" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:9px;border:1px solid #d8dde5">' +
+        '<option value="">跟随配方默认</option>' +
+        '<option value="shallow">浅尝 · 快速过</option>' +
+        '<option value="standard">标准 · 结构化</option>' +
+        '<option value="deep">深挖 · 追问原理</option></select>' +
+        '<label style="display:flex;gap:6px;align-items:center;margin-top:12px;font-size:.85rem;cursor:pointer"><input type="checkbox" id="rkGearRv"> 本篇加入复习计划</label>' +
+        '<div style="font-size:.72rem;color:#8a94a2;margin-top:10px;line-height:1.6">本篇设置只作用于当前这篇；全局默认值在顶栏 ⚗️ 炼金配方里改。</div>';
+      row.style.position = "relative";
+      row.appendChild(p);
+      var sel = p.querySelector("#rkGearDepth");
+      sel.value = cur;
+      sel.addEventListener("change", function () {
+        var rr = RKRecipe.get(); rr.depth.perTopic = rr.depth.perTopic || {};
+        if (sel.value) rr.depth.perTopic[tid] = sel.value; else delete rr.depth.perTopic[tid];
+        RKRecipe.save(rr); toast("本篇档位已记到配方 🧪", true);
+      });
+      var cb = p.querySelector("#rkGearRv");
+      cb.checked = rvOn;
+      cb.addEventListener("change", function () {
+        var rr = RKRecipe.get(); rr.review.perTopic = rr.review.perTopic || {};
+        rr.review.perTopic[tid] = cb.checked ? true : false;
+        RKRecipe.save(rr); toast(cb.checked ? "本篇已加入复习 🔁" : "本篇不再复习", true);
+      });
+      setTimeout(function () {
+        document.addEventListener("click", function hide(ev) {
+          var pp = document.getElementById("rkTopicGearPop");
+          if (pp && !pp.contains(ev.target) && ev.target !== g) { pp.remove(); document.removeEventListener("click", hide); }
+        });
+      }, 0);
+    });
+    row.appendChild(g);
+  }
+};
