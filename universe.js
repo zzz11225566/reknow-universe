@@ -2317,6 +2317,7 @@
       curServer.hot = payload.items.map(function (it, i) { return { rank: i + 1, id: it.id || it.key, q: it.q || it.title, cat: it.cat || 'work', votes: it.votes || 0, custom: false, link: it.url || '' }; });
       curServer.live = true;
       paintHot();
+      paintRoomTopics(); // 热榜到达后同步刷新房间话题池，避免用户从本地兜底列表误入 hot:llm 等错误房间
     }
     function applyEnv2(payload) {
       if (!payload) return;
