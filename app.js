@@ -1139,3 +1139,171 @@ renderFlow = function () {
   __renderFlowV7.apply(null, arguments);
   try { rkZhStrip(); } catch (e) { }
 };
+
+
+/* ================================================================
+   v8 · 账户系统 + 云端同步（路线图第 1 步）
+   - rkAuth = { name, token, ts:{键:时间戳} }，请求头 Authorization: Bearer
+   - 登录/注册成功 → 拉取云端数据覆盖本地 → 刷新页面生效
+   - 使用中：save/saveCustom 被包裹后防抖推送；另每 90s 与页面隐藏时兜底推送
+   - file:// 或后端未启动：安静降级为纯本地，绝不弹错打扰（离线红线）
+   ================================================================ */
+var RKAuth = (function () {
+  var KEY = "rkAuth";
+  var SYNC_KEYS = ["rkSave", "rkCustom", "rkUni6", "rkUniOrig", "rkRecipe"];
+  var pushing = false, pushTimer = null, lastPushOk = 0;
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } }
+  function saveAuth(a) { try { if (a) localStorage.setItem(KEY, JSON.stringify(a)); else localStorage.removeItem(KEY); } catch (e) { } }
+  function loggedIn() { var a = load(); return !!(a && a.name && a.token); }
+  function headers() {
+    var a = load(), h = { "Content-Type": "application/json" };
+    if (a && a.token) h["Authorization"] = "Bearer " + a.token;
+    return h;
+  }
+  function api(p, method, body) {
+    return fetch(RKAPI.base() + p, { method: method, headers: headers(), body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json(); });
+  }
+
+  /* ---- 推送：把 5 个本地键整体上传到云端 ---- */
+  function collectLocal() {
+    var data = {};
+    SYNC_KEYS.forEach(function (k) {
+      try { var v = localStorage.getItem(k); if (v !== null) data[k] = JSON.parse(v); } catch (e) { }
+    });
+    return data;
+  }
+  function push(manual) {
+    if (!loggedIn() || pushing) return Promise.resolve(false);
+    pushing = true;
+    return api("/api/me/data", "POST", { data: collectLocal() }).then(function (j) {
+      pushing = false;
+      if (j && j.ok) {
+        lastPushOk = Date.now();
+        var a = load(); SYNC_KEYS.forEach(function (k) { if (localStorage.getItem(k) !== null) a.ts[k] = Date.now(); }); saveAuth(a);
+        paint(); if (manual) toast("已同步到云端 ☁️", true);
+        return true;
+      }
+      if (j && /登录/.test(j.error || "")) { /* 令牌过期：安静降级 */ }
+      return false;
+    }).catch(function () { pushing = false; if (manual) toast("连不上后端：先运行 node server.js"); return false; });
+  }
+  function schedulePush() {
+    if (!loggedIn()) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () { push(false); }, 3000);
+  }
+
+  /* ---- 拉取：云端比本地新的键才覆盖；有覆盖则刷新页面 ---- */
+  function pull(afterLogin) {
+    if (!loggedIn()) return Promise.resolve(false);
+    return api("/api/me/data", "GET").then(function (j) {
+      if (!j || !j.ok) return false;
+      var a = load(), changed = false;
+      var cloud = j.data || {}, cts = j.ts || {};
+      SYNC_KEYS.forEach(function (k) {
+        if (cloud[k] === undefined) return;
+        var remoteNewer = (cts[k] || 0) > ((a.ts && a.ts[k]) || 0);
+        if (afterLogin || remoteNewer) {
+          try { localStorage.setItem(k, JSON.stringify(cloud[k])); a.ts = a.ts || {}; a.ts[k] = cts[k] || Date.now(); changed = true; } catch (e) { }
+        }
+      });
+      saveAuth(a);
+      if (changed) { toast("已从云端恢复你的数据 ☁️", true); setTimeout(function () { location.reload(); }, 700); }
+      return changed;
+    }).catch(function () { return false; });
+  }
+
+  /* ---- UI ---- */
+  function paint() {
+    var a = load();
+    var lab = document.getElementById("authLabel"), ava = document.getElementById("authAva");
+    if (lab) lab.textContent = a ? (a.name + " · 云端同步中") : "游客模式 · 点击登录";
+    if (ava) ava.textContent = a ? a.name.charAt(0) : "游";
+  }
+  function openModal() {
+    var a = load();
+    document.getElementById("authForm").style.display = a ? "none" : "";
+    document.getElementById("authMe").style.display = a ? "" : "none";
+    if (a) {
+      document.getElementById("meName").textContent = a.name;
+      document.getElementById("meAva").textContent = a.name.charAt(0);
+      document.getElementById("meTs").textContent = lastPushOk ? ("上次同步 " + new Date(lastPushOk).toLocaleTimeString()) : "本次会话尚未同步";
+      document.getElementById("meMsg").textContent = "";
+    } else {
+      document.getElementById("authErr").textContent = "";
+    }
+    document.getElementById("ovAuth").classList.add("on");
+  }
+  var mode = "login";
+  function setMode(m) {
+    mode = m;
+    document.getElementById("authTabLogin").classList.toggle("on", m === "login");
+    document.getElementById("authTabReg").classList.toggle("on", m === "reg");
+    document.getElementById("authGo").textContent = m === "login" ? "登 录" : "注册并登录";
+    document.getElementById("authErr").textContent = "";
+  }
+  function submit() {
+    var name = document.getElementById("authName").value.trim();
+    var pw = document.getElementById("authPass").value;
+    var err = document.getElementById("authErr");
+    if (!name || !pw) { err.textContent = "请填写用户名和密码"; return; }
+    var btn = document.getElementById("authGo");
+    btn.disabled = true; btn.textContent = "连接中…";
+    api(mode === "login" ? "/api/auth/login" : "/api/auth/register", "POST", { name: name, password: pw }).then(function (j) {
+      btn.disabled = false; setMode(mode);
+      if (!j || !j.ok) { err.textContent = (j && j.error) || "操作失败"; return; }
+      saveAuth({ name: j.name, token: j.token, ts: {} });
+      err.textContent = "";
+      document.getElementById("ovAuth").classList.remove("on");
+      toast("欢迎，" + j.name + "！正在从云端恢复你的数据…", true);
+      pull(true);
+    }).catch(function () {
+      btn.disabled = false; setMode(mode);
+      err.textContent = "连不上后端：先运行 node server.js（离线时所有数据仍只保存在本机）";
+    });
+  }
+  function bind() {
+    var b = document.getElementById("btnAuth");
+    if (b) b.addEventListener("click", openModal);
+    var c = document.getElementById("authClose");
+    if (c) c.addEventListener("click", function () { document.getElementById("ovAuth").classList.remove("on"); });
+    var tl = document.getElementById("authTabLogin"), tr = document.getElementById("authTabReg");
+    if (tl) tl.addEventListener("click", function () { setMode("login"); });
+    if (tr) tr.addEventListener("click", function () { setMode("reg"); });
+    var g = document.getElementById("authGo");
+    if (g) g.addEventListener("click", submit);
+    var pp = document.getElementById("authPass");
+    if (pp) pp.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+    var ms = document.getElementById("meSync");
+    if (ms) ms.addEventListener("click", function () { push(true); });
+    var lo = document.getElementById("meLogout");
+    if (lo) lo.addEventListener("click", function () {
+      if (!confirm("退出登录？本机数据会保留，只是不再同步到云端。")) return;
+      saveAuth(null); paint();
+      document.getElementById("ovAuth").classList.remove("on");
+      toast("已退出登录（本机数据保留）", true);
+    });
+  }
+
+  /* ---- 启动：恢复登录态 → 拉取云端 → 定时兜底推送 ---- */
+  function boot() {
+    bind(); paint();
+    if (!loggedIn()) return;
+    pull(false);
+    setInterval(function () { push(false); }, 90 * 1000);
+    document.addEventListener("visibilitychange", function () { if (document.hidden) push(false); });
+    window.addEventListener("beforeunload", function () { if (loggedIn()) { try { navigator.sendBeacon && navigator.sendBeacon(RKAPI.base() + "/api/me/data", new Blob([JSON.stringify({ data: collectLocal() })], { type: "application/json" })); } catch (e) { } } });
+  }
+  return { boot: boot, schedulePush: schedulePush, push: push, pull: pull, loggedIn: loggedIn, name: function () { var a = load(); return a ? a.name : null; } };
+})();
+window.RKAuth = RKAuth;
+
+/* 包裹保存函数：本地写入后顺带调度云端推送（保持"后者覆盖前者"的项目模式） */
+var __saveV8 = save;
+save = function () { __saveV8.apply(null, arguments); try { RKAuth.schedulePush(); } catch (e) { } };
+var __saveCustomV8 = saveCustom;
+saveCustom = function () { __saveCustomV8.apply(null, arguments); try { RKAuth.schedulePush(); } catch (e) { } };
+
+RKAuth.boot();

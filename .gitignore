@@ -19,6 +19,7 @@ env.*
 *.sqlite
 *.sqlite3
 data/*.db
+data/reknow.json
 
 # 日志
 *.log

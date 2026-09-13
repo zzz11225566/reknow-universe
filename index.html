@@ -1139,6 +1139,22 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 .dmsg .pmk.local{background:rgba(230,150,60,.18);color:#a86a1c}
 .dmsg.busy{opacity:.85;font-style:italic}
 .typing3{display:inline-flex;gap:3px;align-items:center;margin-left:4px}
+
+/* ---- 8. 账户与云端同步（第 1 步） ---- */
+.acc{cursor:pointer;background:none;border:none;font:inherit}
+.acc:hover .u{box-shadow:0 0 0 3px rgba(15,136,235,.25)}
+.auth-tabs{display:flex;gap:8px;margin:12px 0 10px}
+.auth-tabs button{flex:1;padding:8px 0;border-radius:10px;border:1px solid var(--line,#e2e5ea);background:#f6f7f9;cursor:pointer;font-size:.92rem;color:#5a6472}
+.auth-tabs button.on{background:#0f88eb;border-color:#0f88eb;color:#fff;font-weight:700}
+#authForm input{width:100%;box-sizing:border-box;margin-top:10px;padding:11px 13px;border-radius:11px;border:1px solid #d8dde5;font-size:.95rem;outline:none}
+#authForm input:focus{border-color:#0f88eb;box-shadow:0 0 0 3px rgba(15,136,235,.14)}
+.auth-sub{font-size:.85rem;color:#7a8494;line-height:1.7;margin:2px 0 0}
+.auth-err{min-height:20px;font-size:.8rem;color:#d4380d;margin:8px 2px 2px}
+.auth-ok{color:#1a9e54}
+#authMe .me-row{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
+#authMe .me-ava{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#0f88eb,#7c5cff);color:#fff;display:grid;place-items:center;font-size:1.15rem;font-weight:700}
+#authMe .me-name{font-weight:700}
+#authMe .me-ts{font-size:.78rem;color:#8a94a2}
 </style>
 </head>
 <body>
@@ -1158,7 +1174,7 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
       <button class="icon-btn" id="btnSnd" title="音效开关">🔊</button>
       <button class="icon-btn" id="btnHelp" title="新手引导">？</button>
       <button class="icon-btn" id="btnReset" title="清空进度">↺</button>
-      <span class="acc"><span class="u">许</span>小许 · <span class="ok">在线</span></span>
+      <button class="acc" id="btnAuth" title="账户与云端同步"><span class="u" id="authAva">游</span><span id="authLabel">游客模式 · 点击登录</span></button>
     </div>
   </div>
 </header>
@@ -1233,6 +1249,25 @@ main:has(#view-home.on) .home-steps{display:block;animation:vin .4s ease}
 </div>
 
 <div class="overlay" id="ovAward"><div class="obox" style="max-width:460px"><div class="achievement"><span class="a-ico" id="awardIco">🏅</span><div><h3 id="awardT">成就达成</h3><p id="awardD"></p></div></div><div class="btnrow" style="justify-content:center"><button class="btn primary" id="awardOk">继续 🎉</button></div></div></div>
+
+<!-- 账户与云端同步弹窗（第 1 步） -->
+<div class="overlay" id="ovAuth"><div class="obox" style="max-width:420px">
+  <h3 style="margin:0 0 4px">☁️ 账户与云端同步</h3>
+  <p class="auth-sub">登录后，学习进度 / 自定义选题 / 宇宙偏好 / 原文批注 / 炼金配方 都会同步到云端——换设备登录就能接着学。离线或未启动后端时，一切照常只保存在本机。</p>
+  <div id="authForm">
+    <div class="auth-tabs"><button id="authTabLogin" class="on">登录</button><button id="authTabReg">注册</button></div>
+    <input id="authName" placeholder="用户名（2-16 位中文/字母/数字）" maxlength="16" autocomplete="username">
+    <input id="authPass" type="password" placeholder="密码（至少 6 位）" autocomplete="current-password">
+    <div class="auth-err" id="authErr"></div>
+    <button class="btn primary big" id="authGo" style="width:100%">登 录</button>
+  </div>
+  <div id="authMe" style="display:none">
+    <div class="me-row"><span class="me-ava" id="meAva">·</span><div><div class="me-name" id="meName"></div><div class="me-ts" id="meTs"></div></div></div>
+    <div class="auth-err auth-ok" id="meMsg"></div>
+    <div class="btnrow" style="gap:8px"><button class="btn primary" id="meSync" style="flex:1">↻ 立即同步</button><button class="btn" id="meLogout" style="flex:1">退出登录</button></div>
+  </div>
+  <div class="btnrow" style="justify-content:center;margin-top:10px"><button class="btn" id="authClose">关闭</button></div>
+</div></div>
 
 <div class="toast-wrap" id="toasts" style="position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:270;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none"></div>
 <div id="confetti"></div>

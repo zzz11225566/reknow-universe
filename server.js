@@ -34,8 +34,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+/* 用于可选地加载 node:sqlite（Node ≥22.5 内置）：加载失败时账户系统降级 JSON 存储，不影响主服务 */
+const requireOpt = createRequire(import.meta.url)
 const PORT = Number(process.env.PORT || 8787)
 const ROOT = __dirname
 
@@ -844,6 +847,97 @@ const MIME = {
   '.webp': 'image/webp', '.woff2': 'font/woff2', '.map': 'application/json; charset=utf-8'
 }
 
+/* ============================================================
+   8. 账户系统 + 云端同步（第 1 步）
+   - 存储：优先 node:sqlite（Node ≥22.5 内置，零依赖）；不可用则降级 JSON 文件
+   - 密码：scrypt + 随机盐 + timingSafeEqual 比对（绝不存明文）
+   - 会话：无状态 HMAC 令牌（uid.exp.sig），有效期 30 天；密钥来自 env 的 AUTH_SECRET
+   - 同步：用户数据按 localStorage 键整体上/下行（rkSave/rkCustom/rkUni6/rkUniOrig/rkRecipe）
+   ============================================================ */
+const DATA_DIR = path.join(ROOT, 'data')
+const DB_FILE = path.join(DATA_DIR, 'reknow.db')
+const JSON_FILE = path.join(DATA_DIR, 'reknow.json')
+const AUTH_SECRET = (process.env.AUTH_SECRET || '').trim() || crypto.randomBytes(32).toString('hex')
+if (!process.env.AUTH_SECRET) console.log('[账户] ⚠️ 未配置 AUTH_SECRET，已生成随机密钥（重启后所有登录态失效）；生产请在 env 里固定')
+const TOKEN_TTL = 30 * 24 * 3600 * 1000
+
+/* ---- 存储层：sqlite 优先，json 兜底（同一套接口） ---- */
+const store = (function () {
+  let db = null
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true })
+    const sqlite = requireOpt('node:sqlite')
+    db = new sqlite.DatabaseSync(DB_FILE)
+    db.exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, pass_hash TEXT NOT NULL, salt TEXT NOT NULL, created_at INTEGER NOT NULL)')
+    db.exec('CREATE TABLE IF NOT EXISTS user_data (user_id INTEGER NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (user_id, key))')
+    const insU = db.prepare('INSERT INTO users (name, pass_hash, salt, created_at) VALUES (?, ?, ?, ?)')
+    const byName = db.prepare('SELECT * FROM users WHERE name = ?')
+    const byId = db.prepare('SELECT * FROM users WHERE id = ?')
+    const upsert = db.prepare('INSERT INTO user_data (user_id, key, value, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at')
+    const getAll = db.prepare('SELECT key, value, updated_at FROM user_data WHERE user_id = ?')
+    const cnt = db.prepare('SELECT COUNT(*) AS n FROM users')
+    return {
+      kind: 'sqlite',
+      createUser(name, hash, salt) { const r = insU.run(name, hash, salt, Date.now()); return Number(r.lastInsertRowid) },
+      userByName(name) { return byName.get(name) || null },
+      userById(id) { return byId.get(id) || null },
+      putData(uid, key, value) { upsert.run(uid, key, value, Date.now()) },
+      allData(uid) { const out = {}; for (const r of getAll.all(uid)) out[r.key] = { value: r.value, ts: r.updated_at }; return out },
+      userCount() { return cnt.get().n }
+    }
+  } catch (e) {
+    console.log('[账户] node:sqlite 不可用（' + (e && e.message) + '），降级为 JSON 文件存储 ' + JSON_FILE)
+    let j = { users: [], data: {} }
+    try { j = JSON.parse(fs.readFileSync(JSON_FILE, 'utf8')) } catch (_) { }
+    const persist = function () {
+      try {
+        fs.mkdirSync(DATA_DIR, { recursive: true })
+        fs.writeFileSync(JSON_FILE + '.tmp', JSON.stringify(j))
+        fs.renameSync(JSON_FILE + '.tmp', JSON_FILE) // 原子替换，避免半截文件
+      } catch (err) { console.log('[账户] JSON 持久化失败：' + err.message) }
+    }
+    return {
+      kind: 'json',
+      createUser(name, hash, salt) { const id = j.users.length ? j.users[j.users.length - 1].id + 1 : 1; j.users.push({ id: id, name: name, pass_hash: hash, salt: salt, created_at: Date.now() }); persist(); return id },
+      userByName(name) { return j.users.find(function (u) { return u.name === name }) || null },
+      userById(id) { return j.users.find(function (u) { return u.id === id }) || null },
+      putData(uid, key, value) { j.data[uid] = j.data[uid] || {}; j.data[uid][key] = { value: value, ts: Date.now() }; persist() },
+      allData(uid) { return j.data[uid] || {} },
+      userCount() { return j.users.length }
+    }
+  }
+})()
+
+/* ---- 密码与令牌 ---- */
+function hashPassword(pw, salt) { return crypto.scryptSync(String(pw), salt, 32).toString('hex') }
+function verifyPassword(pw, salt, expect) {
+  const a = Buffer.from(hashPassword(pw, salt), 'hex')
+  const b = Buffer.from(expect || '', 'hex')
+  return a.length === b.length && crypto.timingSafeEqual(a, b)
+}
+function signToken(uid) {
+  const exp = Date.now() + TOKEN_TTL
+  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(uid + '.' + exp).digest('hex')
+  return uid + '.' + exp + '.' + sig
+}
+function authUser(req) {
+  const h = req.headers['authorization'] || ''
+  const m = /^Bearer\s+(.+)$/.exec(h)
+  if (!m) return null
+  const parts = m[1].split('.')
+  if (parts.length !== 3) return null
+  const uid = Number(parts[0]), exp = Number(parts[1]), sig = parts[2]
+  if (!uid || !exp || exp < Date.now()) return null
+  const want = crypto.createHmac('sha256', AUTH_SECRET).update(uid + '.' + exp).digest('hex')
+  const a = Buffer.from(sig), b = Buffer.from(want)
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null
+  const u = store.userById(uid)
+  return u ? { id: u.id, name: u.name, created_at: u.created_at } : null
+}
+/* 允许云端同步的键（白名单，防止任意键撑爆库） */
+const SYNC_KEYS = ['rkSave', 'rkCustom', 'rkUni6', 'rkUniOrig', 'rkRecipe']
+const SYNC_VALUE_CAP = 2 * 1024 * 1024 // 单键 2MB 上限
+
 const server = http.createServer(async function (req, res) {
   let url
   try { url = new URL(req.url, 'http://x') } catch (e) { return sendJSON(res, 400, { ok: false, error: 'bad url' }) }
@@ -857,6 +951,7 @@ const server = http.createServer(async function (req, res) {
       return sendJSON(res, 200, {
         ok: true, ts: Date.now(), service: 'reknow-v7',
         providers: providerMeta(),
+        auth: { storage: store.kind, users: store.userCount() },
         ws: '/ws', clients: clients.size, rooms: rooms.size
       })
     }
@@ -873,6 +968,55 @@ const server = http.createServer(async function (req, res) {
       return sendJSON(res, 200, { items: searchLocal(kw), ts: Date.now(), source: 'local', note: z.error || '' })
     }
     if (p === '/api/env') return sendJSON(res, 200, envNow())
+
+    /* ---- 账户与云端同步（第 1 步） ---- */
+    if (p === '/api/auth/register' && req.method === 'POST') {
+      const b = await readBody(req)
+      if (!b) return sendJSON(res, 400, { ok: false, error: 'body too large' })
+      const name = String(b.name || '').trim()
+      const pw = String(b.password || '')
+      if (!/^[\w一-龥-]{2,16}$/.test(name)) return sendJSON(res, 400, { ok: false, error: '用户名需为 2-16 位中文/字母/数字' })
+      if (pw.length < 6) return sendJSON(res, 400, { ok: false, error: '密码至少 6 位' })
+      if (store.userByName(name)) return sendJSON(res, 409, { ok: false, error: '该用户名已被注册' })
+      const salt = crypto.randomBytes(16).toString('hex')
+      const uid = store.createUser(name, hashPassword(pw, salt), salt)
+      return sendJSON(res, 200, { ok: true, name: name, token: signToken(uid), storage: store.kind })
+    }
+    if (p === '/api/auth/login' && req.method === 'POST') {
+      const b = await readBody(req)
+      if (!b) return sendJSON(res, 400, { ok: false, error: 'body too large' })
+      const u = store.userByName(String(b.name || '').trim())
+      if (!u || !verifyPassword(b.password || '', u.salt, u.pass_hash)) return sendJSON(res, 401, { ok: false, error: '用户名或密码不正确' })
+      return sendJSON(res, 200, { ok: true, name: u.name, token: signToken(u.id), storage: store.kind })
+    }
+    if (p === '/api/auth/me') {
+      const u = authUser(req)
+      if (!u) return sendJSON(res, 401, { ok: false, error: '未登录或登录已过期' })
+      return sendJSON(res, 200, { ok: true, name: u.name, createdAt: u.created_at })
+    }
+    if (p === '/api/me/data' && req.method === 'GET') {
+      const u = authUser(req)
+      if (!u) return sendJSON(res, 401, { ok: false, error: '未登录或登录已过期' })
+      const all = store.allData(u.id)
+      const data = {}, ts = {}
+      for (const k of Object.keys(all)) { if (SYNC_KEYS.indexOf(k) >= 0) { try { data[k] = JSON.parse(all[k].value) } catch (e) { } ts[k] = all[k].ts } }
+      return sendJSON(res, 200, { ok: true, data: data, ts: ts, storage: store.kind })
+    }
+    if (p === '/api/me/data' && req.method === 'POST') {
+      const u = authUser(req)
+      if (!u) return sendJSON(res, 401, { ok: false, error: '未登录或登录已过期' })
+      const b = await readBody(req, 8 * 1024 * 1024)
+      if (!b || typeof b !== 'object') return sendJSON(res, 400, { ok: false, error: 'body too large' })
+      const incoming = (b.data && typeof b.data === 'object') ? b.data : b
+      const saved = []
+      for (const k of Object.keys(incoming)) {
+        if (SYNC_KEYS.indexOf(k) < 0) continue
+        const v = JSON.stringify(incoming[k] === undefined ? null : incoming[k])
+        if (v.length > SYNC_VALUE_CAP) return sendJSON(res, 413, { ok: false, error: '键 ' + k + ' 超过 2MB 上限' })
+        store.putData(u.id, k, v); saved.push(k)
+      }
+      return sendJSON(res, 200, { ok: true, saved: saved, ts: Date.now() })
+    }
 
     /* ---- 知乎开放平台 ---- */
     if (p === '/api/zhihu/search') {
@@ -1028,6 +1172,7 @@ server.listen(PORT, function () {
   const pm = providerMeta()
   console.log('[炼知 ReKnow v7] http://localhost:' + PORT)
   console.log('  · 主页面       http://localhost:' + PORT + '/')
+  console.log('  · 账户系统     ✅ ' + store.kind + ' 存储（' + DATA_DIR.replace(ROOT, '.') + '）· /api/auth/register|login|me · /api/me/data')
   console.log('  · 知乎开放平台  ' + (ZH_OK ? '✅ token 已配置（' + CFG.zhihuBase + '）' : '❌ 未配置 ZHIHU_ACCESS_TOKEN'))
   console.log('  · 模型分工      AI 问答 ' + providerOrder('chat').join(' → ') + '   |   AI 抬杠 ' + providerOrder('debate').join(' → '))
   if (DS_OK) {
